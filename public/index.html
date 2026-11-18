@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steve's Massage Parlor - Rejuvenation & Wellness Sanctuary</title>
+  <meta name="description" content="Steve's Massage Parlor Management System - DBIT 226 Research Project, Kenya Methodist University. Book premier therapeutic massages in Nairobi.">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  
+  <!-- Google Fonts: Playfair Display & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Main Application CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- TOP BAR: Contact Information & Operating Hours -->
+  <div class="top-bar no-print">
+    <div class="container">
+      <div class="top-bar-contact">
+        <span><i class="fas fa-map-marker-alt text-gold"></i> Valley Arcade, Gitanga Rd, Nairobi</span>
+        <span><i class="fas fa-phone-alt text-gold"></i> +254 712 345 678</span>
+        <span><i class="fas fa-clock text-gold"></i> Mon - Sat: 8:30 AM - 8:00 PM</span>
+      </div>
+      <div class="top-bar-contact" style="gap:16px;">
+        <span><i class="fas fa-envelope text-gold"></i> info@stevesmassage.co.ke</span>
+        <span><i class="fas fa-shield-alt text-gold"></i> Licensed Wellness Sanctuary</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN NAVIGATION -->
+  <header class="main-navbar no-print">
+    <div class="container">
+      <div class="brand-logo">
+        <div class="logo-icon">
+          <i class="fas fa-spa"></i>
+        </div>
+        <div class="brand-text">
+          <h2>Steve's Massage</h2>
+          <span>Wellness & Parlor System</span>
+        </div>
+      </div>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#home" class="active">Home</a></li>
+          <li><a href="#about">About Us</a></li>
+          <li><a href="#services">Services & Pricing</a></li>
+          <li><a href="#therapists">Therapists</a></li>
+          <li><a href="javascript:void(0)" onclick="App.openInventoryPortal()" title="Inventory Controller Module (Mercy)"><i class="fas fa-boxes text-gold"></i> Inventory</a></li>
+          <li><a href="javascript:void(0)" onclick="App.openFinancePortal()" title="Finance Director Module (Patrick)"><i class="fas fa-wallet text-gold"></i> Finance</a></li>
+          <li><a href="javascript:void(0)" onclick="App.openServicePortal()" title="Spa Services Module (Lucas)"><i class="fas fa-spa text-gold"></i> Services</a></li>
+          <li><a href="#reviews">Testimonials</a></li>
+          <li><a href="#contact">Contact</a></li>
+          <li><a href="javascript:void(0)" onclick="App.openAuthModal('login')" style="font-weight:700; color:var(--accent);"><i class="fas fa-user-lock text-gold"></i> Login Portal</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions" id="nav-auth-container">
+        <button class="btn btn-outline btn-sm" onclick="App.openAuthModal('login')">
+          <i class="fas fa-sign-in-alt"></i> Log In
+        </button>
+        <button class="btn btn-gold btn-sm" onclick="Booking.openBookingModal()">
+          <i class="fas fa-calendar-check"></i> Book Now
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ROLE-BASED PORTAL WRAPPER (Shown when user is inside Dashboard) -->
+  <main id="portal-wrapper" class="portal-wrap container">
+    <div id="portal-content">
+      <!-- Dynamic views for Customer, Therapist, or Administrator -->
+    </div>
+  </main>
+
+  <!-- PUBLIC LANDING PAGE SECTIONS -->
+  <div id="landing-container">
+    
+    <!-- HERO SECTION -->
+    <section id="home" class="hero landing-section">
+      <div class="container hero-content">
+        <div class="hero-text">
+          <span class="badge badge-gold" style="margin-bottom: 16px;">
+            <i class="fas fa-gem"></i> Nairobi's Premier Relaxation Experience
+          </span>
+          <h1>Rejuvenate Your <span>Body, Mind & Soul</span></h1>
+          <p>
+            Experience tailored deep tissue muscle therapy, European Swedish relaxation, and soothing aromatherapy administered by certified therapists in our tranquil, hygienic Nairobi sanctuary.
+          </p>
+          <div class="hero-cta" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+            <button class="btn btn-gold" onclick="Booking.openBookingModal()">
+              <i class="fas fa-calendar-alt"></i> Book Appointment Now
+            </button>
+            <button class="btn btn-outline" style="color:#FFFFFF; border-color:var(--accent); background:rgba(197, 160, 89, 0.15);" onclick="App.openAuthModal('login')">
+              <i class="fas fa-sign-in-alt text-gold"></i> Sign In to Portal
+            </button>
+            <a href="#services" class="btn btn-outline" style="color:#FFFFFF; border-color:rgba(255,255,255,0.4);">
+              <i class="fas fa-spa"></i> Explore Services
+            </a>
+          </div>
+          <div class="hero-features">
+            <div class="hero-feature-item">
+              <i class="fas fa-mobile-alt"></i>
+              <span>Instant M-Pesa STK</span>
+            </div>
+            <div class="hero-feature-item">
+              <i class="fas fa-award"></i>
+              <span>Certified Specialists</span>
+            </div>
+            <div class="hero-feature-item">
+              <i class="fas fa-leaf"></i>
+              <span>100% Organic Cold-Pressed Oils</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-card">
+          <h3>Quick Booking</h3>
+          <p>Check specialist availability and reserve in under 60 seconds.</p>
+          <div class="hero-quick-form">
+            <select id="hero-quick-service" onchange="document.getElementById('book-service-select').value = this.value;">
+              <option value="">Select Massage Treatment</option>
+              <option value="1">Signature Deep Tissue (60m) - KES 3,500</option>
+              <option value="2">Swedish Gentle Relaxation (60m) - KES 3,000</option>
+              <option value="6">Volcanic Basalt Hot Stone (75m) - KES 4,500</option>
+              <option value="4">Athletic Sports Recovery (60m) - KES 4,000</option>
+            </select>
+            <select id="hero-quick-therapist">
+              <option value="any">Any Available Specialist</option>
+              <option value="1">Grace Muthoni (Deep Tissue & Swedish)</option>
+              <option value="2">David Otieno (Sports & Trigger Point)</option>
+              <option value="3">Amina Hassan (Aromatherapy & Hot Stone)</option>
+            </select>
+            <button class="btn btn-gold" style="width:100%;" onclick="Booking.openBookingModal()">
+              Proceed to Booking Wizard
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT US MODULE (Module 16) -->
+    <section id="about" class="section landing-section">
+      <div class="container">
+        <div class="about-grid">
+          <div class="about-card-img">
+            <span class="sub-badge">About Steve's Massage Parlor</span>
+            <h2 style="font-size:2.2rem; margin:10px 0 16px;">Dedicated to Holistic Healing & Physical Renewal</h2>
+            <p style="color:var(--text-muted); font-size:0.95rem; line-height:1.7;">
+              Founded with the vision to deliver world-class therapeutic wellness in Nairobi, Steve's Massage Parlor blends traditional holistic techniques with modern ergonomic science. We cater to professionals with demanding desk postures, athletes recovering from strenuous competition, and clients desiring calm tranquility.
+            </p>
+            <ul class="about-pill-list">
+              <li><i class="fas fa-check-circle"></i> <strong>Certified Therapists:</strong> Hand-picked professionals licensed in physical massage therapy.</li>
+              <li><i class="fas fa-check-circle"></i> <strong>Clinical Hygiene:</strong> Hospital-grade sterilization, fresh Egyptian cotton linens for every guest.</li>
+              <li><i class="fas fa-check-circle"></i> <strong>Personalized Pressure:</strong> Every session customizes pressure, focus points, and essential oils.</li>
+            </ul>
+            <div class="about-stats">
+              <div class="stat-box">
+                <h3>4.9★</h3>
+                <span>Average Client Rating</span>
+              </div>
+              <div class="stat-box">
+                <h3>1,800+</h3>
+                <span>Relaxed Clients</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="background:#FFFFFF; border:1px solid var(--border); border-radius:var(--radius-lg); padding:35px; box-shadow:var(--shadow-sm); margin-bottom:20px;">
+              <h4 style="font-size:1.3rem; margin-bottom:10px; color:var(--primary);"><i class="fas fa-compass text-gold"></i> Our Vision</h4>
+              <p style="color:var(--text-muted); font-size:0.92rem;">
+                To become East Africa's benchmark wellness provider through seamless digital automation, world-class therapeutic techniques, and compassionate client care.
+              </p>
+            </div>
+            <div style="background:#FFFFFF; border:1px solid var(--border); border-radius:var(--radius-lg); padding:35px; box-shadow:var(--shadow-sm); margin-bottom:20px;">
+              <h4 style="font-size:1.3rem; margin-bottom:10px; color:var(--primary);"><i class="fas fa-bullseye text-gold"></i> Our Mission</h4>
+              <p style="color:var(--text-muted); font-size:0.92rem;">
+                To provide accessible, convenient, and top-tier massage therapy that relieves tension, prevents chronic muscular pain, and revitalizes our community's quality of life.
+              </p>
+            </div>
+            <div style="background:#FFFFFF; border:1px solid var(--border); border-radius:var(--radius-lg); padding:35px; box-shadow:var(--shadow-sm);">
+              <h4 style="font-size:1.3rem; margin-bottom:10px; color:var(--primary);"><i class="fas fa-shield-alt text-gold"></i> Compliance & Privacy</h4>
+              <p style="color:var(--text-muted); font-size:0.92rem;">
+                We strictly adhere to the Kenya Data Protection Act (2019) to ensure all customer records, medical notes, and financial transactions are securely protected.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVICES CATALOG & PRICING MODULE (Modules 8 & 13) -->
+    <section id="services" class="section section-alt landing-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="sub-badge">Treatments & Pricing</span>
+          <h2>Tailored Massage Therapies</h2>
+          <p>Choose from our curated therapeutic treatments designed to relieve muscle stress, improve blood circulation, and bring holistic calm.</p>
+        </div>
+
+        <!-- SEARCH BAR (Module 13 Search Module) -->
+        <div class="search-box-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="service-search-input" placeholder="Search massage treatments (e.g. Deep Tissue, Hot Stone)...">
+        </div>
+
+        <!-- Category Filters -->
+        <div class="services-filters">
+          <button class="filter-btn active" onclick="App.renderServices(null); document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">
+            All Treatments
+          </button>
+          <button class="filter-btn" onclick="App.renderServices(1); document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">
+            Full Body Therapeutic
+          </button>
+          <button class="filter-btn" onclick="App.renderServices(2); document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">
+            Sports & Deep Recovery
+          </button>
+          <button class="filter-btn" onclick="App.renderServices(3); document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">
+            Sensory & Aromatherapy
+          </button>
+          <button class="filter-btn" onclick="App.renderServices(4); document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">
+            Foot Reflexology
+          </button>
+        </div>
+
+        <!-- Dynamic Services Grid -->
+        <div id="services-grid-container" class="services-grid">
+          <!-- Populated by App.renderServices() -->
+        </div>
+      </div>
+    </section>
+
+    <!-- THERAPISTS SHOWCASE (Module 4) -->
+    <section id="therapists" class="section landing-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="sub-badge">Certified Practitioners</span>
+          <h2>Meet Our Expert Therapists</h2>
+          <p>Our licensed specialists undergo rigorous training and hold international wellness certifications to guarantee exceptional therapeutic care.</p>
+        </div>
+
+        <div id="therapists-grid-container" class="therapists-grid">
+          <!-- Populated by App.renderTherapists() -->
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENT TESTIMONIALS & FEEDBACK (Module 15) -->
+    <section id="reviews" class="section section-alt landing-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="sub-badge">Client Satisfaction</span>
+          <h2>What Our Clients Say</h2>
+          <p>Real feedback from satisfied clients who trust Steve's Massage Parlor for their pain relief and mental rejuvenation.</p>
+        </div>
+
+        <div id="reviews-grid-container" class="reviews-grid">
+          <!-- Populated by App.renderReviews() -->
+        </div>
+
+        <div class="text-center">
+          <button class="btn btn-outline" onclick="App.currentUser ? Customer.openFeedbackModal() : App.openAuthModal('login')">
+            <i class="fas fa-edit"></i> Share Your Experience / Review
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT US MODULE (Module 14) -->
+    <section id="contact" class="section landing-section">
+      <div class="container">
+        <div class="contact-grid">
+          <div class="contact-info-card">
+            <span class="badge badge-gold" style="margin-bottom:14px;">Contact Steve's Massage Parlor</span>
+            <h3>Visit Our Nairobi Sanctuary</h3>
+            <p>We are centrally located in Lavington/Valley Arcade with private secure parking, peaceful ambient suites, and serene gardens.</p>
+
+            <div class="contact-detail-item">
+              <i class="fas fa-map-marker-alt"></i>
+              <div>
+                <h5>Physical Location</h5>
+                <span>Valley Arcade Shopping Centre, 2nd Floor, Gitanga Road, Lavington, Nairobi, Kenya</span>
+              </div>
+            </div>
+
+            <div class="contact-detail-item">
+              <i class="fas fa-phone-alt"></i>
+              <div>
+                <h5>Customer Desk & Bookings</h5>
+                <span>+254 712 345 678 / +254 722 000 111</span>
+              </div>
+            </div>
+
+            <div class="contact-detail-item">
+              <i class="fas fa-envelope"></i>
+              <div>
+                <h5>Official Email</h5>
+                <span>bookings@stevesmassage.co.ke / support@stevesmassage.co.ke</span>
+              </div>
+            </div>
+
+            <div class="contact-detail-item">
+              <i class="fas fa-business-time"></i>
+              <div>
+                <h5>Operating Hours</h5>
+                <span>Monday - Saturday: 8:30 AM - 8:00 PM<br>Sunday & Public Holidays: 10:00 AM - 6:00 PM</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="contact-form-card">
+            <h3 style="margin-bottom:8px; font-size:1.6rem; color:var(--primary);">Send Us an Inquiry</h3>
+            <p class="text-muted" style="margin-bottom:24px; font-size:0.92rem;">Have questions about tandem rooms, corporate wellness, or special requirements? Reach out directly to management.</p>
+
+            <form id="contact-inquiry-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Your Name *</label>
+                  <input type="text" id="inq-name" class="form-control" required placeholder="e.g. Wanjiru Mwangi">
+                </div>
+                <div class="form-group">
+                  <label>Email Address *</label>
+                  <input type="email" id="inq-email" class="form-control" required placeholder="name@domain.com">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Phone Number</label>
+                  <input type="tel" id="inq-phone" class="form-control" placeholder="07XXXXXXXX" maxlength="10" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)">
+                </div>
+                <div class="form-group">
+                  <label>Inquiry Subject *</label>
+                  <input type="text" id="inq-subject" class="form-control" required placeholder="e.g. Couples Massage Package">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Your Message *</label>
+                <textarea id="inq-message" class="form-control" rows="4" required placeholder="Type your inquiry, request, or question here..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-gold" style="width:100%;">
+                <i class="fas fa-paper-plane"></i> Send Inquiry to Management
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HELP & FAQS MODULE (Module 18) -->
+    <section id="faqs" class="section section-alt landing-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="sub-badge">Support & Guidance</span>
+          <h2>Frequently Asked Questions</h2>
+          <p>Everything you need to know about preparing for your session, digital payments, and parlor policies.</p>
+        </div>
+
+        <div class="faq-wrap">
+          <div class="faq-item active">
+            <div class="faq-question">
+              <span>What should I wear or prepare for my massage appointment?</span>
+              <i class="fas fa-chevron-down text-gold"></i>
+            </div>
+            <div class="faq-answer">
+              Wear comfortable clothing. You will be provided with a private dressing room, plush bathrobes, and disposable undergarments. During therapy, professional draping techniques ensure you are always modestly covered except for the specific body area being massaged.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">
+              <span>How does M-Pesa digital payment work?</span>
+              <i class="fas fa-chevron-down text-gold"></i>
+            </div>
+            <div class="faq-answer">
+              During online checkout, choose Safaricom M-Pesa. Enter your Safaricom mobile phone number, and you will receive an automatic STK PIN prompt on your phone for immediate confirmation. You also receive an instant SMS receipt with your unique reference number.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">
+              <span>Can I reschedule or cancel my booking?</span>
+              <i class="fas fa-chevron-down text-gold"></i>
+            </div>
+            <div class="faq-answer">
+              Yes, you can easily reschedule or cancel up to 2 hours prior to your scheduled time directly from your Client Portal or by contacting our front desk at +254 712 345 678.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question">
+              <span>Are therapist consultations private and confidential?</span>
+              <i class="fas fa-chevron-down text-gold"></i>
+            </div>
+            <div class="faq-answer">
+              Absolutely. In accordance with the Kenya Data Protection Act (2019), all health notes, pressure preferences, and personal details are encrypted and kept strictly between you and your licensed therapist.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- AUTHENTICATION MODAL (Login / Register) -->
+  <div id="auth-modal" class="modal-overlay no-print">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="auth-modal-title">Sign In</h3>
+        <button class="modal-close-btn" onclick="App.closeModal('auth-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Login Form -->
+        <form id="auth-login-form" onsubmit="event.preventDefault(); App.login(document.getElementById('login-email').value, document.getElementById('login-pass').value);">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="login-email" class="form-control" required placeholder="name@example.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-pass" class="form-control" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-gold" style="width:100%; margin-top:10px;">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+          </button>
+          <div style="text-align:center; margin-top:18px; font-size:0.88rem;">
+            Don't have an account? <a href="javascript:void(0)" onclick="App.openAuthModal('register')" style="color:var(--accent); font-weight:700;">Register as Client</a>
+          </div>
+        </form>
+
+        <!-- Register Form -->
+        <form id="auth-register-form" style="display:none;" onsubmit="App.handleRegister(event);">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="reg-name" class="form-control" required placeholder="e.g. Terence Mwaaki">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone Number (10 Digits)</label>
+              <input type="tel" id="reg-phone" class="form-control" required placeholder="07XXXXXXXX or 01XXXXXXXX" maxlength="10" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)">
+              <small class="text-muted" style="font-size:0.75rem;">Enter valid 10-digit number (e.g. 0712345678) — max 10 digits</small>
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <select id="reg-gender" class="form-control">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Prefer not to say</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="reg-email" class="form-control" required placeholder="client@example.com">
+          </div>
+          <div class="form-group">
+            <label>Create Password</label>
+            <input type="password" id="reg-pass" class="form-control" required placeholder="At least 6 characters">
+          </div>
+          <button type="submit" class="btn btn-gold" style="width:100%; margin-top:10px;">
+            <i class="fas fa-user-plus"></i> Create Account
+          </button>
+          <div style="text-align:center; margin-top:18px; font-size:0.88rem;">
+            Already have an account? <a href="javascript:void(0)" onclick="App.openAuthModal('login')" style="color:var(--accent); font-weight:700;">Sign In</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- SITE FOOTER -->
+  <footer class="site-footer no-print">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-logo" style="margin-bottom:16px;">
+            <div class="logo-icon"><i class="fas fa-spa"></i></div>
+            <div class="brand-text">
+              <h2 style="color:#FFFFFF;">Steve's Massage</h2>
+              <span>Wellness Sanctuary</span>
+            </div>
+          </div>
+          <p style="font-size:0.88rem; line-height:1.6; margin-bottom:18px;">
+            A centralized web-based management platform automating appointment scheduling, therapist rostering, inventory control, and digital payments in Nairobi, Kenya.
+          </p>
+          <div style="display:flex; gap:12px; font-size:1.1rem; color:var(--accent);">
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-whatsapp"></i></a>
+            <a href="#"><i class="fab fa-linkedin"></i></a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About Our Parlor</a></li>
+            <li><a href="#services">Massage Services</a></li>
+            <li><a href="#therapists">Certified Therapists</a></li>
+            <li><a href="#contact">Contact & Map</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Wellness Treatments</h4>
+          <ul>
+            <li><a href="#services">Deep Tissue Massage</a></li>
+            <li><a href="#services">Swedish Relaxation</a></li>
+            <li><a href="#services">Hot Basalt Stone</a></li>
+            <li><a href="#services">Athletic Sports Therapy</a></li>
+            <li><a href="#services">Herbal Aromatherapy</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Academic Unit Details</h4>
+          <p style="font-size:0.85rem; line-height:1.6; margin-bottom:6px;">
+            <strong>Institution:</strong> Kenya Methodist University (KEMU)
+          </p>
+          <p style="font-size:0.85rem; line-height:1.6; margin-bottom:6px;">
+            <strong>Department:</strong> Computer Science
+          </p>
+          <p style="font-size:0.85rem; line-height:1.6; margin-bottom:6px;">
+            <strong>Unit Code:</strong> DBIT 226 Research Project
+          </p>
+          <p style="font-size:0.85rem; line-height:1.6; margin-bottom:6px;">
+            <strong>Researcher:</strong> Terence Mwaaki (BIT-0-8106-3/2025)
+          </p>
+          <p style="font-size:0.85rem; line-height:1.6;">
+            <strong>Supervisor:</strong> Mr. Austin Wanjala
+          </p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Steve's Massage Parlor Management System. All Rights Reserved.</div>
+        <div>Compliant with the Kenya Data Protection Act (2019).</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Scripts -->
+  <script src="js/app.js"></script>
+  <script src="js/booking.js"></script>
+  <script src="js/inventory.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/managers.js"></script>
+  <script src="js/therapist.js"></script>
+  <script src="js/supplier.js"></script>
+  <script src="js/reports.js"></script>
+</body>
+</html>

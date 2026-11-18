@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="spaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1C2E26" />
+      <stop offset="100%" stop-color="#4E725E" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5C378" />
+      <stop offset="100%" stop-color="#C5A059" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="24" fill="url(#spaGrad)"/>
+  <!-- Stylized Lotus / Wellness Leaf -->
+  <path d="M50 20 C50 35, 30 45, 30 65 C30 76, 39 82, 50 82 C61 82, 70 76, 70 65 C70 45, 50 35, 50 20 Z" fill="url(#goldGrad)" opacity="0.95"/>
+  <path d="M50 32 C50 48, 38 56, 38 68 C38 74, 43 78, 50 78 C57 78, 62 74, 62 68 C62 56, 50 48, 50 32 Z" fill="#FFFFFF" opacity="0.3"/>
+  <circle cx="50" cy="52" r="4" fill="#FFFFFF"/>
+</svg>
