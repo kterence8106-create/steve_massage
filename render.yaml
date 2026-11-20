@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: steves-massage-parlour
+    runtime: node
+    plan: free
+    buildCommand: "echo 'No build step needed'"
+    startCommand: "node server.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+    autoDeploy: true
