@@ -1,120 +1,178 @@
-# Steve's Massage Parlor Web-Based Management System
+# 🌿 Steve's Massage Parlour — How to Access the Website
 
-**Academic Institution:** Kenya Methodist University (KEMU)  
-**School:** School of Computing and Informatics  
-**Department:** Department of Computer Science  
-**Unit Title:** Research Project Proposal (DBIT 226)  
-**Researcher / Candidate:** Terence Mwaaki (Registration No: `BIT-0-8106-3/2025`)  
-**Supervisor:** Mr. Austin Wanjala  
+**Academic Institution:** Kenya Methodist University (KEMU)
+**Unit:** Research Project Proposal (DBIT 226)
+**Researcher:** Terence Mwaaki — `BIT-0-8106-3/2025`
+**Supervisor:** Mr. Austin Wanjala
 
 ---
 
-## 🌿 Project Overview
+## 🌐 Option A — Access the Live Website (Online)
 
-**Steve's Massage Parlor Management System** is a full-stack, enterprise-grade web application engineered to modernize and automate daily operations at Steve's Massage Parlor in Valley Arcade, Nairobi, Kenya. The system replaces manual paper booking ledgers, physical treatment logs, and disjointed inventory tracking with a centralized, role-based digital platform. 
+The system is hosted online and can be accessed from any device with a browser.
 
-The application provides:
-- Client self-service online booking with real-time therapist scheduling conflict prevention
-- Safaricom **M-Pesa STK Push** simulation with verifiable transaction references in Kenyan Shillings (KES)
-- Comprehensive **Inventory & Supplies Management** with SKU tracking, stock movement audit trails, and Purchase Order vouchers
-- Therapist Clinical Portal for session status tracking, daily schedules, shift rosters, and clinical treatment records
-- Executive Management Portal with real-time business telemetry, finance and budget ledgers, and user account administration
-- Full compliance with the **Kenya Data Protection Act (2019)** regarding client health notes and personal contact records
+### Step 1 — Open the Website
+Go to your browser (Chrome, Edge, Firefox) and type the URL:
 
----
+```
+https://steves-massage-parlour.onrender.com
+```
 
-## 🛠️ Architecture & Tech Stack
-
-- **Backend:** Native **Node.js** HTTP server (`node:http`, `node:crypto`, `node:url`, `node:fs`, `node:path`) — **zero external npm dependencies required**.
-- **Runtime Database:** Native **`node:sqlite`** embedded database (`database/steves_massage.db`) with automatic schema initialization and initial seeding upon first launch.
-- **Academic MySQL Submission:** Complete MySQL 8.0 DDL ([`database/mysql_schema.sql`](file:///c:/Users/HomePC/Downloads/steves_massage/database/mysql_schema.sql)) and DML seed data ([`database/mysql_seed.sql`](file:///c:/Users/HomePC/Downloads/steves_massage/database/mysql_seed.sql)) for academic defense and XAMPP/phpMyAdmin grading.
-- **Frontend:** Responsive Single-Page Application (SPA) built with **Semantic HTML5**, **Modern CSS3**, and **Vanilla JavaScript (ES6+)**.
-- **Aesthetic:** Luxury wellness spa design featuring Forest Emerald (`#1C2E26`) and Champagne Gold (`#C5A059`), with typography powered by *Playfair Display* and *Plus Jakarta Sans* via Google Fonts CDN.
-- **Icons & Media:** Font Awesome 6 CDN and custom SVG branding assets.
+> ⏳ **First load may take up to 30 seconds** — the free server wakes up on first visit. After that it runs normally.
 
 ---
 
-## 📦 Scope of Modules (18 Modules Implemented)
+### Step 2 — Choose Your Login
 
-| # | Module | Description & Key Capabilities |
-|---|---|---|
-| **1** | **Database Module** | Relational schemas across 15 entities (users, therapists, services, appointments, payments, inventory, suppliers, POs, stock movements, finance, inquiries, notifications). |
-| **2** | **Administrator Module** | Executive KPI telemetry, bookings control, service pricing, therapist management, user account control, and system administration. |
-| **3** | **Customer Module** | Account profile management, appointment history, printable payment receipts, and review submission. |
-| **4** | **Therapist Module** | Daily assigned client schedule, session status tracking (`In-Session`, `Completed`), clinical notes recording, and weekly shift roster configuration. |
-| **5** | **Appointment Booking Module** | 4-step wizard: Service selection, real-time date/slot availability, client medical/health preferences, and instant confirmation. |
-| **6** | **Payment Module** | Multi-method payments in KES (M-Pesa STK push simulation, Credit/Debit Card, Cash) with transaction references and printable receipts. |
-| **7** | **Scheduling Module** | Conflict-free slot booking algorithm with 15-minute room turnaround buffers and therapist working hours enforcement. |
-| **8** | **Service Management Module** | CRUD operations for treatments across 4 categories, customizable duration (mins), prices in KES, and health benefits. |
-| **9** | **Inventory Manager Module** | 5-part stock suite: Catalog with SKU and storage location, real-time valuation, low-stock threshold alerts, stock adjustment (Dispense/Restock/Recount), and stock movement audit log. |
-| **10** | **Supplier & PO Module** | Vendor directory, payment terms, vendor ratings, official Purchase Order generation, and goods receipt with automated stock and finance expense updates. |
-| **11** | **Finance Manager Module** | Income vs. Expenses tracking, net cashflow, operational department budgets, and financial transaction ledger. |
-| **12** | **Notification Module** | Automated SMS and In-App notification simulation for booking confirmations, M-Pesa receipts, and low-stock alerts. |
-| **13** | **Search Module** | Real-time client search for treatments by keywords, name, duration, and category filters. |
-| **14** | **Contact Us Module** | Valley Arcade location details, operating hours, and interactive inquiry form linked directly to Admin inbox. |
-| **15** | **Feedback Module** | 5-star verified customer ratings, testimonials carousel, and direct review submission. |
-| **16** | **About Us Module** | Company background, mission, vision, 4 core wellness pillars, and Kenya Data Protection Act compliance statement. |
-| **17** | **Reports Module** | Executive analytics, service revenue contribution, therapist productivity ratings, printable A4 business reports, and CSV export. |
-| **18** | **Help Module** | Interactive FAQ accordion providing guidance on session preparation, payments, and cancellations. |
+You will see the login page. Use any of the accounts below depending on the role you want to explore:
+
+| Role | Email | Password | What You Can Do |
+|---|---|---|---|
+| 👑 **Admin** | `admin@stevesmassage.co.ke` | `Admin@123` | Manage staff, roles, full system overview |
+| 💰 **Finance Officer** | `finance@stevesmassage.co.ke` | `Finance@123` | View payments, pay suppliers, expenses, billing |
+| 📦 **Inventory Manager** | `inventory@stevesmassage.co.ke` | `Inventory@123` | Manage stock, purchase orders, suppliers |
+| 💆 **Therapist (Grace)** | `grace@stevesmassage.co.ke` | `Grace@123` | View appointments, session records, schedule |
+| 💆 **Therapist (David)** | `david@stevesmassage.co.ke` | `David@123` | View appointments, session records, schedule |
+| 💆 **Therapist (Amina)** | `amina@stevesmassage.co.ke` | `Amina@123` | View appointments, session records, schedule |
+| 💆 **Therapist (Brian)** | `brian@stevesmassage.co.ke` | `Brian@123` | View appointments, session records, schedule |
+| 🏢 **Supplier 1** | `supplier@spasupplies.co.ke` | `Supplier@123` | View purchase orders from the parlour |
+| 🏢 **Supplier 2** | `sales@kenyalinens.co.ke` | `Supplier@123` | View purchase orders from the parlour |
+| 👤 **Customer 1** | `terence@example.com` | `Client@123` | Book appointments, make payments, view history |
+| 👤 **Customer 2** | `faith@example.com` | `Client@123` | Book appointments, make payments, view history |
 
 ---
 
-## 🚀 Quick Start Guide
+### Step 3 — Explore the Dashboard
 
-### 1. Prerequisites
-- **Node.js v22 or higher** (uses native `node:sqlite`). No external `npm install` packages are required.
+After logging in, each role sees its own dashboard:
 
-### 2. Launch the Application
-Run the following command from the project root directory:
+- **Admin** → Full system: staff, reports, finances, inventory, bookings
+- **Finance** → Payments received, supplier payments, expense tracking
+- **Inventory** → Stock levels, purchase orders, supplier management
+- **Therapist** → Today's appointments, session notes, shift roster
+- **Supplier** → Purchase orders raised by the parlour
+- **Customer** → Book a massage, pay via M-Pesa, view booking history
+
+---
+
+### Step 4 — Log Out
+
+Click your **name or avatar** in the top-right corner → click **"Logout"**
+
+---
+
+---
+
+## 💻 Option B — Run Locally on Your Computer (Offline)
+
+Use this if you want to run the system on your own machine without internet.
+
+### Requirements
+- [Node.js v22+](https://nodejs.org) installed on your PC
+- The project files from GitHub: `https://github.com/kterence8106-create/steve_massage`
+
+---
+
+### Step 1 — Download the Project
+
+**Option 1 — Using Git:**
+```bash
+git clone https://github.com/kterence8106-create/steve_massage.git
+cd steve_massage
+```
+
+**Option 2 — Download ZIP:**
+1. Go to `https://github.com/kterence8106-create/steve_massage`
+2. Click the green **"Code"** button → **"Download ZIP"**
+3. Extract the ZIP folder anywhere on your computer (e.g. `C:\Users\YourName\steve_massage`)
+
+---
+
+### Step 2 — Start the Server
+
+Open **PowerShell** or **Command Prompt** inside the project folder and run:
 
 ```bash
 node server.js
 ```
 
-Then open your browser and navigate to:
+You should see:
+```
+✅  Steve's Massage Parlour server running
+   Local:   http://localhost:3000
+```
+
+---
+
+### Step 3 — Open the Website
+
+Open your browser and go to:
+
 ```
 http://localhost:3000
 ```
 
----
-
-## 🔑 Demonstration User Credentials
-
-The database comes pre-seeded with functional demonstration accounts for every role across the system. You can log in using their credentials or click the **"Demo Portals"** pills in the top bar:
-
-| System User Role | Representative Name | Email Address | Password | Dedicated Portal & Scope |
-|---|---|---|---|---|
-| **Administrator** | Steve Mwangi | `admin@stevesmassage.co.ke` | `Admin@123` | Master Executive Suite, System Config & Full Oversight |
-| **Finance Director** | Patrick Mutua | `finance@stevesmassage.co.ke` | `Finance@123` | PO Approvals Workflow, M-Pesa Revenues, Ledgers, Budgets |
-| **Inventory Manager** | Mercy Chebet | `inventory@stevesmassage.co.ke` | `Inventory@123` | Consumables Catalog, Shortage Requests, Receiving & GRNs |
-| **Service Manager** | Lucas Ochieng | `services@stevesmassage.co.ke` | `Services@123` | Service Appointments, Treatment Catalog & Staff Rosters |
-| **Therapist (Grace)** | Grace Muthoni | `grace@stevesmassage.co.ke` | `Grace@123` | Grace's Clinical Schedule, Patient Notes & Session Status |
-| **Therapist (David)** | David Otieno | `david@stevesmassage.co.ke` | `David@123` | David's Clinical Schedule, Patient Notes & Session Status |
-| **Therapist (Amina)** | Amina Hassan | `amina@stevesmassage.co.ke` | `Amina@123` | Amina's Clinical Schedule, Patient Notes & Session Status |
-| **Therapist (Brian)** | Brian Kiprop | `brian@stevesmassage.co.ke` | `Brian@123` | Brian's Clinical Schedule, Patient Notes & Session Status |
-| **Supplier (Vendor 1)** | Jared Momanyi (Nairobi Herbal Ltd) | `supplier@spasupplies.co.ke` | `Supplier@123` | Supplier Orders Dashboard, Order Acknowledgment, Transit Tracking |
-| **Supplier (Vendor 2)** | Susan Wambui (Kenya Linens Mills) | `sales@kenyalinens.co.ke` | `Supplier@123` | Dedicated Supplier Dashboard for Linens & Textile Orders |
-| **Customer (Client 1)** | Terence Mwaaki | `terence@example.com` | `Client@123` | Customer Booking, M-Pesa Confirmation, Appointment History |
-| **Customer (Client 2)** | Faith Wanjiku | `faith@example.com` | `Client@123` | Customer Booking, Appointment History & Feedback |
+The login page will appear. Use any of the credentials from the table above.
 
 ---
 
-## 🗄️ Database Import Instructions for MySQL / XAMPP
+### Step 4 — Stop the Server
 
-If presenting your proposal or project defense with XAMPP / phpMyAdmin:
-1. Start **Apache** and **MySQL** in the XAMPP Control Panel.
-2. Open `http://localhost/phpmyadmin/`.
-3. Create a new database named `steves_massage_db`.
-4. Go to the **Import** tab and select [`database/mysql_schema.sql`](file:///c:/Users/HomePC/Downloads/steves_massage/database/mysql_schema.sql).
-5. Next, import [`database/mysql_seed.sql`](file:///c:/Users/HomePC/Downloads/steves_massage/database/mysql_seed.sql) to populate initial demonstration records.
+When you are done, go back to PowerShell and press:
+
+```
+Ctrl + C
+```
 
 ---
 
-## 📄 Unit & Candidate Reference
+---
 
-- **University:** Kenya Methodist University (KEMU)
-- **School:** School of Computing and Informatics
-- **Department:** Department of Computer Science
-- **Unit Code:** DBIT 226 Research Project
-- **Candidate:** Terence Mwaaki (`BIT-0-8106-3/2025`)
-- **Supervisor:** Mr. Austin Wanjala
+## 🛠️ Option C — PHP/MySQL Version (XAMPP)
+
+If you want to run the PHP version of the system:
+
+### Requirements
+- [XAMPP](https://www.apachefriends.org) installed
+
+### Steps
+
+1. Copy the project folder into:
+   ```
+   C:\xampp\htdocs\steve_massage\
+   ```
+
+2. Open **XAMPP Control Panel** → Start **Apache** and **MySQL**
+
+3. Go to `http://localhost/phpmyadmin/` → click **Import** → select:
+   ```
+   database\steve_massage.sql
+   ```
+   Click **Go**
+
+4. Open your browser and go to:
+   ```
+   http://localhost/steve_massage/
+   ```
+
+5. Log in using the same credentials in the table above.
+
+---
+
+## ❓ Common Issues
+
+| Problem | Solution |
+|---|---|
+| Live site takes long to load | Wait 30 seconds — the free server is waking up |
+| "Cannot connect" on localhost | Make sure `node server.js` is running in PowerShell |
+| Wrong password error | Check you are using the right email/password pair from the table |
+| XAMPP database error | Make sure you imported `steve_massage.sql` in phpMyAdmin |
+| Port 3000 already in use | Run `node server.js` only once, or change PORT in server.js |
+
+---
+
+## 📞 Contact
+
+**Researcher:** Terence Mwaaki
+**Email:** `terencemwaaki@gmail.com`
+**Institution:** Kenya Methodist University — DBIT 226
