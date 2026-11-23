@@ -359,6 +359,8 @@ function ensureDemoAccounts(db) {
         'brian@stevesmassage.co.ke',
         'supplier@spasupplies.co.ke',
         'sales@kenyalinens.co.ke',
+        'info@afromedwellness.com',
+        'peter@afromedwellness.com',
         'terence@example.com',
         'faith@example.com'
       )
@@ -453,6 +455,26 @@ function ensureDemoAccounts(db) {
   } else {
     updatePass.run(hashPassword('Supplier@123'), '0722556677', 'supplier', 'sales@kenyalinens.co.ke');
     db.prepare('UPDATE users SET supplier_id = ? WHERE LOWER(email) = ?').run(sup2Id, 'sales@kenyalinens.co.ke');
+  }
+
+  let sup3Id = 3;
+  if (suppliersResult.cnt > 2) {
+    const s3 = db.prepare('SELECT id FROM suppliers ORDER BY id LIMIT 1 OFFSET 2').get();
+    if (s3) sup3Id = s3.id;
+  }
+
+  if (!checkUser.get('info@afromedwellness.com')) {
+    insertUser.run('Dr. Peter Karanja (Afromed Wellness)', 'info@afromedwellness.com', '0733990011', hashPassword('Supplier@123'), 'supplier', 'Male', sup3Id);
+  } else {
+    updatePass.run(hashPassword('Supplier@123'), '0733990011', 'supplier', 'info@afromedwellness.com');
+    db.prepare('UPDATE users SET supplier_id = ? WHERE LOWER(email) = ?').run(sup3Id, 'info@afromedwellness.com');
+  }
+
+  if (!checkUser.get('peter@afromedwellness.com')) {
+    insertUser.run('Dr. Peter Karanja (Afromed Wellness)', 'peter@afromedwellness.com', '0733990011', hashPassword('Supplier@123'), 'supplier', 'Male', sup3Id);
+  } else {
+    updatePass.run(hashPassword('Supplier@123'), '0733990011', 'supplier', 'peter@afromedwellness.com');
+    db.prepare('UPDATE users SET supplier_id = ? WHERE LOWER(email) = ?').run(sup3Id, 'peter@afromedwellness.com');
   }
 
   // Customers

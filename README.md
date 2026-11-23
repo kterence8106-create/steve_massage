@@ -31,12 +31,14 @@ You will see the login page. Use any of the accounts below depending on the role
 | 👑 **Admin** | `admin@stevesmassage.co.ke` | `Admin@123` | Manage staff, roles, full system overview |
 | 💰 **Finance Officer** | `finance@stevesmassage.co.ke` | `Finance@123` | View payments, pay suppliers, expenses, billing |
 | 📦 **Inventory Manager** | `inventory@stevesmassage.co.ke` | `Inventory@123` | Manage stock, purchase orders, suppliers |
+| 🗂️ **Service Manager** | `services@stevesmassage.co.ke` | `Services@123` | Manage services, therapist assignments, pricing |
 | 💆 **Therapist (Grace)** | `grace@stevesmassage.co.ke` | `Grace@123` | View appointments, session records, schedule |
 | 💆 **Therapist (David)** | `david@stevesmassage.co.ke` | `David@123` | View appointments, session records, schedule |
 | 💆 **Therapist (Amina)** | `amina@stevesmassage.co.ke` | `Amina@123` | View appointments, session records, schedule |
 | 💆 **Therapist (Brian)** | `brian@stevesmassage.co.ke` | `Brian@123` | View appointments, session records, schedule |
-| 🏢 **Supplier 1** | `supplier@spasupplies.co.ke` | `Supplier@123` | View purchase orders from the parlour |
-| 🏢 **Supplier 2** | `sales@kenyalinens.co.ke` | `Supplier@123` | View purchase orders from the parlour |
+| 🏢 **Supplier 1 (Nairobi Herbal)** | `supplier@spasupplies.co.ke` | `Supplier@123` | View purchase orders from the parlour |
+| 🏢 **Supplier 2 (Kenya Linens)** | `sales@kenyalinens.co.ke` | `Supplier@123` | View purchase orders from the parlour |
+| 🏢 **Supplier 3 (Dr. Peter Karanja)** | `info@afromedwellness.com` | `Supplier@123` | Afromed Wellness Equipment POs & invoices |
 | 👤 **Customer 1** | `terence@example.com` | `Client@123` | Book appointments, make payments, view history |
 | 👤 **Customer 2** | `faith@example.com` | `Client@123` | Book appointments, make payments, view history |
 
