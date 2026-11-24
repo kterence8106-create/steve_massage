@@ -71,6 +71,7 @@ $page_title="Payments"; include '../includes/header.php';
       <th>Status</th>
       <th>Finance Clearance</th>
       <th>Date</th>
+      <th>Booking Receipt</th>
     </tr>
   </thead>
   <tbody>
@@ -86,6 +87,11 @@ $page_title="Payments"; include '../includes/header.php';
           </span>
         </td>
         <td><?= $p['payment_date'] ?></td>
+        <td>
+          <a class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem;" href="receipt.php?appt=<?= $p['appointment_id'] ?>" target="_blank">
+            <i class="fas fa-print"></i> Receipt
+          </a>
+        </td>
       </tr>
     <?php endforeach; ?>
   </tbody>

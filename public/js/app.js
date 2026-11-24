@@ -923,20 +923,23 @@ const Customer = {
                       `)}
                     </td>
                     <td>
-                      ${a.status !== 'Cancelled' && a.finance_status !== 'Approved' ? `
-                        <div style="display:flex; gap:6px;">
-                          <button class="btn btn-gold btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="Customer.openPayModal(${a.id}, '${a.reference_no}', '${a.service_name}', ${a.total_price_kes})">
-                            <i class="fas fa-credit-card"></i> Pay Now
+                      ${a.status !== 'Cancelled' ? `
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                          ${a.finance_status !== 'Approved' ? `
+                            <button class="btn btn-gold btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="Customer.openPayModal(${a.id}, '${a.reference_no}', '${a.service_name}', ${a.total_price_kes})">
+                              <i class="fas fa-credit-card"></i> Pay Now
+                            </button>
+                          ` : ''}
+                          <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="Customer.viewBookingReceiptByApptId(${a.id})">
+                            <i class="fas fa-file-invoice"></i> Receipt
                           </button>
-                          <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.75rem; color:var(--danger); border-color:var(--danger);" onclick="Customer.cancelBooking(${a.id})">
-                            Cancel
-                          </button>
+                          ${a.finance_status !== 'Approved' ? `
+                            <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.75rem; color:var(--danger); border-color:var(--danger);" onclick="Customer.cancelBooking(${a.id})">
+                              Cancel
+                            </button>
+                          ` : ''}
                         </div>
-                      ` : (a.status !== 'Cancelled' ? `
-                        <button class="btn btn-outline btn-sm" onclick="Booking.viewReceipt('${a.reference_no}', '${a.service_name}', '${a.therapist_name}', '${a.appointment_date}', '${a.appointment_time}', ${a.total_price_kes}, '${a.payment_method || 'M-Pesa'}')">
-                          <i class="fas fa-print"></i> Receipt
-                        </button>
-                      ` : '<span class="text-muted">—</span>')}
+                      ` : '<span class="text-muted">—</span>'}
                     </td>
                   </tr>
                 `).join('')}
@@ -977,6 +980,7 @@ const Customer = {
                   <th>Transaction Ref</th>
                   <th>Date Paid</th>
                   <th>Finance Clearance Status</th>
+                  <th>Booking Receipt</th>
                 </tr>
               </thead>
               <tbody>
@@ -1002,6 +1006,11 @@ const Customer = {
                           <i class="fas fa-clock"></i> Pending Finance Approval
                         </span>
                       `)}
+                    </td>
+                    <td>
+                      <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="Customer.viewBookingReceiptByPaymentId(${p.id})">
+                        <i class="fas fa-file-invoice"></i> View Receipt
+                      </button>
                     </td>
                   </tr>
                 `).join('')}
@@ -1161,6 +1170,149 @@ const Customer = {
       App.showToast(err.message, 'danger');
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Payment for Finance Clearance';
+    }
+  },
+
+
+  viewBookingReceipt(data) {
+    let receiptModal = document.getElementById('customer-receipt-modal');
+    if (!receiptModal) {
+      receiptModal = document.createElement('div');
+      receiptModal.id = 'customer-receipt-modal';
+      receiptModal.className = 'modal-overlay';
+      document.body.appendChild(receiptModal);
+    }
+
+    const ref = data.reference_no || ('REF-' + (data.id || ''));
+    const service = data.service_name || 'Wellness Therapy';
+    const therapist = data.therapist_name || 'Specialist Therapist';
+    const date = data.appointment_date || 'N/A';
+    const time = data.appointment_time || 'N/A';
+    const amount = Number(data.total_price_kes || data.amount_kes || data.price_kes || 0);
+    const method = data.payment_method || 'M-Pesa';
+    const transRef = data.transaction_ref || 'PENDING-SETTLEMENT';
+    const isApproved = data.finance_status === 'Approved';
+    const clientName = (App.currentUser && App.currentUser.name) ? App.currentUser.name : (data.customer_name || 'Valued Client');
+    const clientPhone = (App.currentUser && App.currentUser.phone) ? App.currentUser.phone : (data.phone_number || '');
+
+    receiptModal.innerHTML = `
+      <div class="modal-card" style="max-width:580px;">
+        <div class="modal-header no-print">
+          <h3><i class="fas fa-file-invoice text-gold"></i> Official Booking Receipt</h3>
+          <button class="btn-close-modal" onclick="App.closeModal('customer-receipt-modal')">&times;</button>
+        </div>
+        <div class="modal-body print-area" style="padding:24px; font-family:'Segoe UI',Roboto,Helvetica,sans-serif;">
+          <!-- Header -->
+          <div style="text-align:center; border-bottom:2px solid #2D6A4F; padding-bottom:14px; margin-bottom:18px;">
+            <h2 style="margin:0; color:#1A472A; letter-spacing:1px; font-size:1.45rem;">STEVE'S MASSAGE PARLOUR LTD</h2>
+            <p style="margin:3px 0; font-size:0.82rem; color:#666;">Valley Arcade, Gitanga Rd, Nairobi &bull; Customer Care: +254 712 345 678</p>
+            <p style="margin:2px 0; font-size:0.8rem; color:#888;">Licensed Wellness Sanctuary &bull; PIN: P051234567Z</p>
+            <div style="margin-top:8px;">
+              <span class="badge badge-gold" style="font-size:0.78rem; text-transform:uppercase; letter-spacing:1px; padding:4px 10px;">
+                Official Booking &amp; Payment Receipt
+              </span>
+            </div>
+          </div>
+
+          <!-- Ref & Meta -->
+          <div style="display:flex; justify-content:space-between; background:#F8F9FA; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:0.88rem;">
+            <div><span class="text-muted">Booking Reference:</span> <strong style="color:#1A472A; font-family:monospace; font-size:1rem;">${ref}</strong></div>
+            <div><span class="text-muted">Issue Date:</span> <strong>${new Date().toISOString().split('T')[0]}</strong></div>
+          </div>
+
+          <!-- Client & Appointment Schedule -->
+          <table style="width:100%; font-size:0.9rem; line-height:2; margin-bottom:16px;">
+            <tr>
+              <td style="width:40%;" class="text-muted"><i class="fas fa-user text-gold"></i> Client Name:</td>
+              <td><strong>${clientName}</strong></td>
+            </tr>
+            <tr>
+              <td class="text-muted"><i class="fas fa-phone text-gold"></i> Mobile Number:</td>
+              <td>${clientPhone || 'On File'}</td>
+            </tr>
+            <tr>
+              <td class="text-muted"><i class="fas fa-spa text-gold"></i> Therapy Treatment:</td>
+              <td><strong>${service}</strong></td>
+            </tr>
+            <tr>
+              <td class="text-muted"><i class="fas fa-user-md text-gold"></i> Assigned Therapist:</td>
+              <td>${therapist}</td>
+            </tr>
+            <tr>
+              <td class="text-muted"><i class="fas fa-calendar-check text-gold"></i> Schedule Slot:</td>
+              <td><strong>${date} at ${time}</strong></td>
+            </tr>
+            <tr>
+              <td class="text-muted"><i class="fas fa-wallet text-gold"></i> Payment Method:</td>
+              <td>${method}</td>
+            </tr>
+            <tr>
+              <td class="text-muted"><i class="fas fa-barcode text-gold"></i> Transaction Reference:</td>
+              <td><code>${transRef}</code></td>
+            </tr>
+          </table>
+
+          <!-- Amount Box -->
+          <div style="background:#E8F5E9; border:1px solid #C8E6C9; border-radius:8px; padding:14px 18px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span style="font-size:0.82rem; color:#2E7D32; text-transform:uppercase; font-weight:600;">Total Amount Paid / Payable</span>
+              <div style="font-size:1.4rem; font-weight:800; color:#1B5E20;">KES ${amount.toLocaleString()}</div>
+            </div>
+            <div>
+              ${isApproved ? `
+                <div style="text-align:right;">
+                  <span style="background:#2E7D32; color:#fff; padding:6px 14px; border-radius:6px; font-weight:700; font-size:0.85rem; display:inline-block;">
+                    <i class="fas fa-check-double"></i> FINANCE CLEARED
+                  </span>
+                  <div style="font-size:0.75rem; color:#2E7D32; margin-top:3px;">Audited by ${data.finance_reviewed_by ? data.finance_reviewed_by.split(' ')[0] : 'Patrick'}</div>
+                </div>
+              ` : `
+                <div style="text-align:right;">
+                  <span style="background:#F39C12; color:#fff; padding:6px 14px; border-radius:6px; font-weight:700; font-size:0.85rem; display:inline-block;">
+                    <i class="fas fa-clock"></i> FINANCE PENDING
+                  </span>
+                  <div style="font-size:0.75rem; color:#856404; margin-top:3px;">Awaiting Bank/M-Pesa audit</div>
+                </div>
+              `}
+            </div>
+          </div>
+
+          <!-- Parlour Policies -->
+          <div style="background:#FAFAFA; border:1px solid #EEE; border-radius:8px; padding:10px 14px; font-size:0.78rem; color:#666; line-height:1.5;">
+            <strong>Guest Guidelines:</strong> Please arrive 15 minutes prior to appointment time. Complimentary herbal tea and locker facilities provided. Rescheduling requires 2 hours advance notice. Protected under Kenya Data Protection Act 2019.
+          </div>
+
+          <!-- Buttons -->
+          <div class="no-print" style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+            <button class="btn btn-gold btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print Receipt</button>
+            <button class="btn btn-outline btn-sm" onclick="App.closeModal('customer-receipt-modal')">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    App.openModal('customer-receipt-modal');
+  },
+
+  async viewBookingReceiptByPaymentId(paymentId) {
+    try {
+      const payments = await App.api('/api/payments');
+      const p = payments.find(x => x.id === paymentId);
+      if (p) this.viewBookingReceipt(p);
+      else App.showToast('Receipt record not found', 'danger');
+    } catch (err) {
+      App.showToast(err.message, 'danger');
+    }
+  },
+
+  async viewBookingReceiptByApptId(apptId) {
+    try {
+      const appts = await App.api('/api/appointments');
+      const a = appts.find(x => x.id === apptId);
+      if (a) this.viewBookingReceipt(a);
+      else App.showToast('Appointment record not found', 'danger');
+    } catch (err) {
+      App.showToast(err.message, 'danger');
     }
   },
 
