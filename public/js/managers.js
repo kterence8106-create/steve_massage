@@ -42,6 +42,7 @@ const FinanceManager = {
         <button class="portal-tab" id="fin-tab-payments" onclick="FinanceManager.switchTab('payments')"><i class="fas fa-receipt"></i> Customer Billings (M-Pesa) <span id="fin-cust-pending-badge" class="badge badge-warning" style="display:none; margin-left:6px;">0</span></button>
         <button class="portal-tab" id="fin-tab-expenses" onclick="FinanceManager.switchTab('expenses')"><i class="fas fa-file-invoice-dollar"></i> Expense & PO Disbursements</button>
         <button class="portal-tab" id="fin-tab-budgets" onclick="FinanceManager.switchTab('budgets')"><i class="fas fa-balance-scale"></i> Department Budgets</button>
+        <button class="portal-tab" id="fin-tab-inquiries" onclick="FinanceManager.switchTab('inquiries')"><i class="fas fa-comments text-gold"></i> Client Inquiries & Billing Queries</button>
       </div>
 
       <div id="finance-main-view"></div>
@@ -52,7 +53,7 @@ const FinanceManager = {
 
   switchTab(tab) {
     this.currentTab = tab;
-    ['overview', 'po-approvals', 'supplier-payments', 'supplies', 'payments', 'expenses', 'budgets'].forEach(t => {
+    ['overview', 'po-approvals', 'supplier-payments', 'supplies', 'payments', 'expenses', 'budgets', 'inquiries'].forEach(t => {
       const btn = document.getElementById(`fin-tab-${t}`);
       if (btn) btn.classList.remove('active');
     });
@@ -66,6 +67,99 @@ const FinanceManager = {
     else if (tab === 'payments') this.renderCustomerPayments();
     else if (tab === 'expenses') this.renderExpenses();
     else if (tab === 'budgets') this.renderBudgets();
+    else if (tab === 'inquiries') this.renderInquiries();
+  },
+
+  async renderInquiries() {
+    const container = document.getElementById('finance-main-view');
+    container.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading customer inquiries...</div>';
+
+    try {
+      const inquiries = await App.api('/api/inquiries');
+      const finInquiries = inquiries.filter(i => (i.target_email || '').toLowerCase().includes('finance'));
+
+      container.innerHTML = `
+        <div class="card" style="margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h3 style="margin:0;"><i class="fas fa-envelope-open-text text-gold"></i> Client Inquiries & Billing Queries</h3>
+              <p class="text-muted" style="margin:4px 0 0 0; font-size:0.85rem;">Official correspondence and billing queries directed to the Finance & Accounts Directorate</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-outline btn-sm" onclick="FinanceManager.renderInquiries()">
+                <i class="fas fa-sync-alt"></i> Refresh Inquiries
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header-bar">
+            <div>
+              <h4 style="margin:0;">Inquiries Directed to Finance (${finInquiries.length})</h4>
+              <p class="text-muted" style="font-size:0.8rem; margin:0;">Target email: finance@stevesmassage.co.ke (Displaying all ${inquiries.length} inquiries)</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Target Email</th>
+                  <th>Subject</th>
+                  <th>Message & Official Response</th>
+                  <th>Received At</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${inquiries.map(inq => {
+                  const isFin = (inq.target_email || '').toLowerCase().includes('finance');
+                  return `
+                    <tr style="${isFin ? 'background:#f0fdf4;' : ''}">
+                      <td>
+                        <strong>${inq.name}</strong>
+                        <div class="text-muted" style="font-size:0.8rem;">
+                          <a href="mailto:${inq.email}" style="color:inherit;"><i class="fas fa-envelope"></i> ${inq.email}</a>
+                          ${inq.phone ? `<br><a href="tel:${inq.phone}" style="color:inherit;"><i class="fas fa-phone"></i> ${inq.phone}</a>` : ''}
+                        </div>
+                      </td>
+                      <td>
+                        <span class="badge" style="background:${isFin ? '#dcfce7; color:#15803d; border:1px solid #86efac;' : '#f3f4f6; color:#4b5563;'} font-size:0.75rem;">
+                          ${inq.target_email || 'admin@stevesmassage.co.ke'}
+                        </span>
+                      </td>
+                      <td><strong>${inq.subject}</strong></td>
+                      <td style="max-width:320px;">
+                        <div style="font-size:0.85rem; color:#333; line-height:1.4;">${inq.message}</div>
+                        ${inq.reply_message ? `
+                          <div style="margin-top:6px; padding:6px 10px; background:#ecfdf5; border-left:3px solid #10b981; border-radius:4px; font-size:0.78rem; color:#065f46;">
+                            <strong><i class="fas fa-check-circle"></i> Replied by ${inq.replied_by || 'Management'}:</strong>
+                            <div style="margin-top:2px; font-style:italic;">"${inq.reply_message.substring(0, 90)}${inq.reply_message.length > 90 ? '...' : ''}"</div>
+                          </div>
+                        ` : ''}
+                      </td>
+                      <td style="font-size:0.8rem; color:#666; white-space:nowrap;">${inq.created_at}</td>
+                      <td>
+                        <span class="badge ${inq.status === 'New' ? 'badge-warning' : 'badge-success'}" style="font-size:0.78rem;">${inq.status}</span>
+                      </td>
+                      <td>
+                        <button class="btn btn-gold btn-sm" onclick="App.openInquiryReplyModal(${inq.id})" style="display:inline-flex; align-items:center; gap:5px; font-size:0.78rem; padding:5px 10px; white-space:nowrap;">
+                          <i class="fas fa-reply"></i> ${inq.status === 'Replied' ? 'View / Edit Reply' : 'Reply to Client'}
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      container.innerHTML = `<div style="color:red; padding:20px;">Failed to load inquiries: ${err.message}</div>`;
+    }
   },
 
   // Overview Tab
@@ -1592,6 +1686,7 @@ const ServiceManager = {
         <button class="portal-tab" id="srv-tab-cats" onclick="ServiceManager.switchTab('categories')"><i class="fas fa-th-large"></i> Wellness Categories</button>
         <button class="portal-tab" id="srv-tab-staff" onclick="ServiceManager.switchTab('staff')"><i class="fas fa-user-md"></i> Therapist Assignments</button>
         <button class="portal-tab" id="srv-tab-analytics" onclick="ServiceManager.switchTab('analytics')"><i class="fas fa-chart-pie"></i> Service Popularity Telemetry</button>
+        <button class="portal-tab" id="srv-tab-inquiries" onclick="ServiceManager.switchTab('inquiries')"><i class="fas fa-comments text-gold"></i> Client Inquiries</button>
       </div>
 
       <div id="service-manager-main-view"></div>
@@ -1602,7 +1697,7 @@ const ServiceManager = {
 
   switchTab(tab) {
     this.currentTab = tab;
-    ['appointments', 'services', 'categories', 'staff', 'analytics'].forEach(t => {
+    ['appointments', 'services', 'categories', 'staff', 'analytics', 'inquiries'].forEach(t => {
       const btn = document.getElementById(`srv-tab-${t}`);
       if (btn) btn.classList.remove('active');
     });
@@ -1614,6 +1709,99 @@ const ServiceManager = {
     else if (tab === 'categories') this.renderCategories();
     else if (tab === 'staff') this.renderStaffAssignments();
     else if (tab === 'analytics') this.renderAnalytics();
+    else if (tab === 'inquiries') this.renderInquiries();
+  },
+
+  async renderInquiries() {
+    const container = document.getElementById('service-manager-main-view');
+    container.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> Loading client service inquiries...</div>';
+
+    try {
+      const inquiries = await App.api('/api/inquiries');
+      const svcInquiries = inquiries.filter(i => (i.target_email || '').toLowerCase().includes('services'));
+
+      container.innerHTML = `
+        <div class="card" style="margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h3 style="margin:0;"><i class="fas fa-comments text-gold"></i> Spa Client Inquiries & Treatment Consultations</h3>
+              <p class="text-muted" style="margin:4px 0 0 0; font-size:0.85rem;">Incoming messages and appointment queries directed to the Spa Services Directorate</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-outline btn-sm" onclick="ServiceManager.renderInquiries()">
+                <i class="fas fa-sync-alt"></i> Refresh Inquiries
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header-bar">
+            <div>
+              <h4 style="margin:0;">Inquiries Directed to Spa Services (${svcInquiries.length})</h4>
+              <p class="text-muted" style="font-size:0.8rem; margin:0;">Target email: services@stevesmassage.co.ke (Displaying all ${inquiries.length} inquiries)</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Target Email</th>
+                  <th>Subject</th>
+                  <th>Message & Official Response</th>
+                  <th>Received At</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${inquiries.map(inq => {
+                  const isSvc = (inq.target_email || '').toLowerCase().includes('services');
+                  return `
+                    <tr style="${isSvc ? 'background:#f0fdf4;' : ''}">
+                      <td>
+                        <strong>${inq.name}</strong>
+                        <div class="text-muted" style="font-size:0.8rem;">
+                          <a href="mailto:${inq.email}" style="color:inherit;"><i class="fas fa-envelope"></i> ${inq.email}</a>
+                          ${inq.phone ? `<br><a href="tel:${inq.phone}" style="color:inherit;"><i class="fas fa-phone"></i> ${inq.phone}</a>` : ''}
+                        </div>
+                      </td>
+                      <td>
+                        <span class="badge" style="background:${isSvc ? '#dcfce7; color:#15803d; border:1px solid #86efac;' : '#f3f4f6; color:#4b5563;'} font-size:0.75rem;">
+                          ${inq.target_email || 'admin@stevesmassage.co.ke'}
+                        </span>
+                      </td>
+                      <td><strong>${inq.subject}</strong></td>
+                      <td style="max-width:320px;">
+                        <div style="font-size:0.85rem; color:#333; line-height:1.4;">${inq.message}</div>
+                        ${inq.reply_message ? `
+                          <div style="margin-top:6px; padding:6px 10px; background:#ecfdf5; border-left:3px solid #10b981; border-radius:4px; font-size:0.78rem; color:#065f46;">
+                            <strong><i class="fas fa-check-circle"></i> Replied by ${inq.replied_by || 'Management'}:</strong>
+                            <div style="margin-top:2px; font-style:italic;">"${inq.reply_message.substring(0, 90)}${inq.reply_message.length > 90 ? '...' : ''}"</div>
+                          </div>
+                        ` : ''}
+                      </td>
+                      <td style="font-size:0.8rem; color:#666; white-space:nowrap;">${inq.created_at}</td>
+                      <td>
+                        <span class="badge ${inq.status === 'New' ? 'badge-warning' : 'badge-success'}" style="font-size:0.78rem;">${inq.status}</span>
+                      </td>
+                      <td>
+                        <button class="btn btn-gold btn-sm" onclick="App.openInquiryReplyModal(${inq.id})" style="display:inline-flex; align-items:center; gap:5px; font-size:0.78rem; padding:5px 10px; white-space:nowrap;">
+                          <i class="fas fa-reply"></i> ${inq.status === 'Replied' ? 'View / Edit Reply' : 'Reply to Client'}
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      container.innerHTML = `<div style="color:red; padding:20px;">Failed to load inquiries: ${err.message}</div>`;
+    }
   },
 
   // Booked Service Appointments View - Reflects all client bookings

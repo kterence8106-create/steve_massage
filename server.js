@@ -1260,26 +1260,104 @@ const server = http.createServer(async (req, res) => {
       const { name, email, phone, target_email, subject, message } = await parseBody(req);
       if (!name || !email || !subject || !message) return sendError(res, 400, 'Name, email, subject, and message required');
       const recipientEmail = (target_email && target_email.trim()) ? target_email.trim() : 'admin@stevesmassage.co.ke';
-      db.prepare(`INSERT INTO inquiries (name, email, phone, target_email, subject, message, status) VALUES (?, ?, ?, ?, ?, ?, 'New')`).run(name, email, phone || '', recipientEmail, subject, message);
-      
+      const inqRes = db.prepare(`INSERT INTO inquiries (name, email, phone, target_email, subject, message, status) VALUES (?, ?, ?, ?, ?, ?, 'New')`).run(name, email, phone || '', recipientEmail, subject, message);
+      const inqId = Number(inqRes.lastInsertRowid);
+
+      // Determine target management role
+      let targetRole = 'admin';
+      if (recipientEmail.includes('services')) targetRole = 'service_manager';
+      else if (recipientEmail.includes('finance')) targetRole = 'finance_manager';
+      else if (recipientEmail.includes('inventory')) targetRole = 'inventory_manager';
+
       // Notify target management recipient
       try {
-        db.prepare(`INSERT INTO notifications (user_id, role_target, title, message, channel, recipient_phone, recipient_email) VALUES (NULL, 'admin', 'New Client Inquiry', ?, 'In-App', NULL, ?)`).run(
-          `New inquiry from ${name} (${email}) regarding "${subject}": ${message.substring(0, 100)}...`,
-          recipientEmail
+        const notifText = `New inquiry #${inqId} from ${name} (${email}) regarding "${subject}": ${message.substring(0, 100)}...`;
+        db.prepare(`INSERT INTO notifications (user_id, role_target, title, message, channel, recipient_phone, recipient_email) VALUES (NULL, ?, 'New Client Inquiry', ?, 'In-App', NULL, ?)`).run(
+          targetRole, notifText, recipientEmail
         );
+        // Also notify admin for oversight if targeted to another manager
+        if (targetRole !== 'admin') {
+          db.prepare(`INSERT INTO notifications (user_id, role_target, title, message, channel, recipient_phone, recipient_email) VALUES (NULL, 'admin', 'Client Inquiry: ' || ?, ?, 'In-App', NULL, 'admin@stevesmassage.co.ke')`).run(
+            subject, `Inquiry directed to ${recipientEmail} from ${name}: ${message.substring(0, 100)}...`
+          );
+        }
       } catch (_) {}
 
-      return sendJSON(res, 201, { message: `Thank you! Your message has been sent to ${recipientEmail}.` });
+      return sendJSON(res, 201, { message: `Thank you! Your message has been sent to ${recipientEmail}.`, inquiry_id: inqId });
     }
 
     if (pathname === '/api/inquiries' && method === 'GET') {
-      if (!user || user.role !== 'admin') return sendError(res, 403, 'Admin access required');
-      return sendJSON(res, 200, db.prepare('SELECT * FROM inquiries ORDER BY created_at DESC').all());
+      const isMgmt = user && ['admin', 'service_manager', 'finance_manager', 'inventory_manager'].includes(user.role);
+      if (!isMgmt) return sendError(res, 403, 'Management access required');
+      
+      let sql = 'SELECT * FROM inquiries';
+      const params = [];
+      if (query.target_email) {
+        sql += ' WHERE LOWER(target_email) = LOWER(?)';
+        params.push(query.target_email);
+      }
+      sql += ' ORDER BY created_at DESC';
+      return sendJSON(res, 200, db.prepare(sql).all(...params));
+    }
+
+    if (pathname.match(/^\/api\/inquiries\/(\d+)$/) && method === 'GET') {
+      const isMgmt = user && ['admin', 'service_manager', 'finance_manager', 'inventory_manager'].includes(user.role);
+      if (!isMgmt) return sendError(res, 403, 'Management access required');
+      const inqId = pathname.split('/')[3];
+      const inq = db.prepare('SELECT * FROM inquiries WHERE id = ?').get(inqId);
+      if (!inq) return sendError(res, 404, 'Inquiry not found');
+      return sendJSON(res, 200, inq);
+    }
+
+    // Management Reply to Inquiry
+    if (pathname.match(/^\/api\/inquiries\/(\d+)\/reply$/) && method === 'POST') {
+      const isMgmt = user && ['admin', 'service_manager', 'finance_manager', 'inventory_manager'].includes(user.role);
+      if (!isMgmt) return sendError(res, 403, 'Management access required');
+
+      const inqId = pathname.split('/')[3];
+      const { reply_message } = await parseBody(req);
+      if (!reply_message || !reply_message.trim()) return sendError(res, 400, 'Reply message is required');
+
+      const inq = db.prepare('SELECT * FROM inquiries WHERE id = ?').get(inqId);
+      if (!inq) return sendError(res, 404, 'Inquiry not found');
+
+      const responder = user.name || 'Management Office';
+      db.prepare(`
+        UPDATE inquiries 
+        SET status = 'Replied', 
+            reply_message = ?, 
+            replied_by = ?, 
+            replied_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `).run(reply_message.trim(), responder, inqId);
+
+      // Check if client is registered user
+      const regUser = db.prepare('SELECT id, name, phone, email FROM users WHERE LOWER(email) = LOWER(?)').get(inq.email);
+
+      // Create notification for client
+      try {
+        db.prepare(`
+          INSERT INTO notifications (user_id, role_target, title, message, channel, recipient_phone, recipient_email) 
+          VALUES (?, NULL, 'Inquiry Reply: ' || ?, ?, 'In-App', ?, ?)
+        `).run(
+          regUser ? regUser.id : null,
+          inq.subject,
+          `Official response from ${responder} regarding "${inq.subject}": ${reply_message.trim()}`,
+          inq.phone || '',
+          inq.email
+        );
+      } catch (_) {}
+
+      return sendJSON(res, 200, {
+        success: true,
+        message: `Reply sent successfully to ${inq.name} (${inq.email}).`,
+        replied_by: responder
+      });
     }
 
     if (pathname.match(/^\/api\/inquiries\/(\d+)\/status$/) && method === 'PUT') {
-      if (!user || user.role !== 'admin') return sendError(res, 403, 'Admin access required');
+      const isMgmt = user && ['admin', 'service_manager', 'finance_manager', 'inventory_manager'].includes(user.role);
+      if (!isMgmt) return sendError(res, 403, 'Management access required');
       const { status } = await parseBody(req);
       db.prepare('UPDATE inquiries SET status = ? WHERE id = ?').run(status, pathname.split('/')[3]);
       return sendJSON(res, 200, { message: 'Inquiry status updated' });
@@ -1292,22 +1370,22 @@ const server = http.createServer(async (req, res) => {
       if (!user) return sendError(res, 401, 'Unauthorized');
       let notifications;
       if (user.role === 'admin') {
-        notifications = db.prepare('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50').all();
+        notifications = db.prepare('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 60').all();
       } else if (user.role === 'therapist') {
-        // Therapists only see notifications addressed specifically to their user_id
-        // (not all role_target='therapist' notifications which would leak cross-therapist data)
         notifications = db.prepare(`
           SELECT * FROM notifications
           WHERE user_id = ?
           ORDER BY created_at DESC LIMIT 30
         `).all(user.userId);
       } else {
-        // Finance, Inventory, Service, Supplier — user-specific + role-targeted notifications
+        // Finance, Inventory, Service, Supplier — user-id, role, or email matching
+        const userRow = db.prepare('SELECT email FROM users WHERE id = ?').get(user.userId);
+        const userEmail = (userRow && userRow.email) ? userRow.email.toLowerCase() : '';
         notifications = db.prepare(`
           SELECT * FROM notifications
-          WHERE user_id = ? OR role_target = ?
-          ORDER BY created_at DESC LIMIT 30
-        `).all(user.userId, user.role);
+          WHERE user_id = ? OR role_target = ? OR (recipient_email IS NOT NULL AND LOWER(recipient_email) = ?)
+          ORDER BY created_at DESC LIMIT 40
+        `).all(user.userId, user.role, userEmail);
       }
       return sendJSON(res, 200, notifications);
     }

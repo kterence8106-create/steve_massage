@@ -131,7 +131,36 @@ const App = {
       else if (role === 'supplier')          { portalLabel = 'Supplier Portal';               portalIcon = 'fa-truck-loading'; }
       else if (role === 'customer')          { portalLabel = 'My Client Portal';              portalIcon = 'fa-calendar-check'; }
 
+      const isMgmt = ['admin', 'service_manager', 'finance_manager', 'inventory_manager'].includes(role);
+
       authContainer.innerHTML = `
+        ${isMgmt ? `
+        <div style="position:relative; display:inline-block;">
+          <button class="btn btn-outline btn-sm notif-bell-btn" id="mgmt-notif-btn" onclick="App.toggleNotifPanel()" title="Notifications & Inquiries" style="position:relative; display:inline-flex; align-items:center; justify-content:center; padding:7px 12px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer;">
+            <i class="fas fa-bell" style="font-size:1rem; color:#4b5563;"></i>
+            <span id="mgmt-notif-badge" class="badge badge-danger" style="display:none; position:absolute; top:-5px; right:-5px; font-size:0.65rem; min-width:18px; height:18px; border-radius:50%; padding:2px; line-height:14px; text-align:center;">0</span>
+          </button>
+          <div id="mgmt-notif-panel" style="display:none; position:absolute; right:0; top:45px; background:#fff; border-radius:12px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1); border:1px solid var(--border); width:360px; max-width:92vw; z-index:1000; overflow:hidden;">
+            <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:#fafafa;">
+              <div style="font-weight:700; font-size:0.88rem; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-bell text-gold"></i> Notifications & Inquiries
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="App.markAllNotifsRead()" style="font-size:0.72rem; padding:3px 8px; border-radius:4px;">Mark All Read</button>
+            </div>
+            <div id="mgmt-notif-list" style="max-height:360px; overflow-y:auto; padding:6px 0;">
+              <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.82rem;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+            </div>
+            <div style="padding:10px 16px; border-top:1px solid var(--border); background:#fafafa; display:flex; justify-content:space-between; align-items:center;">
+              <a href="javascript:void(0)" onclick="App.openPortal()" style="font-size:0.78rem; font-weight:600; color:var(--primary); text-decoration:none;">
+                <i class="fas fa-tachometer-alt"></i> Portal Dashboard
+              </a>
+              <button class="btn btn-outline btn-sm" onclick="App.loadNotifications()" style="font-size:0.72rem; padding:2px 7px;">
+                <i class="fas fa-sync-alt"></i> Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+        ` : ''}
         <button class="btn btn-gold btn-sm" onclick="App.openPortal()" style="display:inline-flex; align-items:center; gap:6px;">
           <i class="fas ${portalIcon}"></i> <span>${portalLabel}</span>
         </button>
@@ -155,6 +184,11 @@ const App = {
           </a>
         </div>
       `;
+
+      if (isMgmt) {
+        this.loadNotifications();
+        this.startNotifPolling();
+      }
     } else {
       authContainer.innerHTML = `
         <button class="btn btn-outline btn-sm" onclick="App.openAuthModal('login')">
@@ -171,6 +205,288 @@ const App = {
     const menu = document.getElementById('user-dropdown-menu');
     if (menu) {
       menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+  },
+
+  toggleNotifPanel() {
+    const panel = document.getElementById('mgmt-notif-panel');
+    if (!panel) return;
+    const isShown = panel.style.display !== 'none';
+    panel.style.display = isShown ? 'none' : 'block';
+    if (!isShown) {
+      this.loadNotifications();
+    }
+  },
+
+  async loadNotifications() {
+    if (!this.currentUser) return;
+    const isMgmt = ['admin', 'service_manager', 'finance_manager', 'inventory_manager'].includes(this.currentUser.role);
+    if (!isMgmt) return;
+
+    try {
+      const notifs = await this.api('/api/notifications');
+      const unread = (notifs || []).filter(n => !n.is_read);
+      const badge = document.getElementById('mgmt-notif-badge');
+      if (badge) {
+        if (unread.length > 0) {
+          badge.innerText = unread.length > 99 ? '99+' : unread.length;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      const list = document.getElementById('mgmt-notif-list');
+      if (!list) return;
+
+      if (!notifs || notifs.length === 0) {
+        list.innerHTML = `
+          <div style="text-align:center; padding:30px 16px; color:var(--text-muted); font-size:0.85rem;">
+            <i class="fas fa-inbox" style="font-size:2rem; margin-bottom:8px; display:block; opacity:0.4;"></i>
+            No notifications or inquiries received yet.
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = notifs.map(n => {
+        const isInquiry = (n.title || '').toLowerCase().includes('inquiry') || (n.message || '').toLowerCase().includes('inquiry');
+        const inqMatch = (n.message || '').match(/#(\d+)/);
+        const inqId = inqMatch ? inqMatch[1] : null;
+
+        return `
+          <div style="padding:10px 14px; border-bottom:1px solid #f0f0f0; background:${n.is_read ? '#fff' : '#f0fdf4'}; display:flex; gap:10px; align-items:flex-start; cursor:pointer; transition:background 0.2s;"
+               onmouseover="this.style.background='#f8f9fa'"
+               onmouseout="this.style.background='${n.is_read ? '#fff' : '#f0fdf4'}'"
+               onclick="App.handleNotifClick(${n.id}, ${inqId ? inqId : 'null'})">
+            <div style="font-size:1.1rem; color:${isInquiry ? 'var(--accent, #c5a059)' : 'var(--primary, #047857)'}; margin-top:2px;">
+              <i class="fas ${isInquiry ? 'fa-envelope-open-text' : 'fa-bell'}"></i>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                <span style="font-weight:700; font-size:0.82rem; color:#222; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:180px;">${n.title || 'Notification'}</span>
+                <span style="font-size:0.7rem; color:#888;">${(n.created_at || '').substring(0, 16)}</span>
+              </div>
+              <div style="font-size:0.78rem; color:#555; line-height:1.35; margin-bottom:4px;">${n.message || ''}</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                ${isInquiry ? `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.68rem; padding:2px 6px;"><i class="fas fa-reply"></i> Click to Reply</span>` : '<span></span>'}
+                ${!n.is_read ? `<span style="font-size:0.68rem; color:var(--primary); font-weight:600;"><i class="fas fa-circle" style="font-size:0.5rem;"></i> New</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (_) {}
+  },
+
+  async handleNotifClick(notifId, inqId) {
+    try {
+      await this.api(`/api/notifications/${notifId}/read`, { method: 'PUT' });
+      this.loadNotifications();
+    } catch (_) {}
+
+    if (inqId) {
+      const panel = document.getElementById('mgmt-notif-panel');
+      if (panel) panel.style.display = 'none';
+      this.openInquiryReplyModal(inqId);
+    }
+  },
+
+  async markAllNotifsRead() {
+    try {
+      await this.api('/api/notifications/read-all', { method: 'POST' });
+      this.showToast('All notifications marked as read', 'success');
+      this.loadNotifications();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to mark read', 'danger');
+    }
+  },
+
+  startNotifPolling() {
+    if (this._notifInterval) return;
+    this._notifInterval = setInterval(() => {
+      if (this.currentUser && ['admin', 'service_manager', 'finance_manager', 'inventory_manager'].includes(this.currentUser.role)) {
+        this.loadNotifications();
+      } else {
+        clearInterval(this._notifInterval);
+        this._notifInterval = null;
+      }
+    }, 25000);
+  },
+
+  async openInquiryReplyModal(inquiryIdOrObj) {
+    let inq = null;
+    if (typeof inquiryIdOrObj === 'object' && inquiryIdOrObj !== null) {
+      inq = inquiryIdOrObj;
+    } else {
+      try {
+        inq = await this.api(`/api/inquiries/${inquiryIdOrObj}`);
+      } catch (err) {
+        this.showToast('Failed to load inquiry: ' + err.message, 'danger');
+        return;
+      }
+    }
+    if (!inq) return;
+
+    let modal = document.getElementById('inquiry-reply-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'inquiry-reply-modal';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+      <div class="modal-card" style="max-width: 650px;">
+        <div class="modal-header">
+          <h3><i class="fas fa-reply-all text-gold"></i> Client Inquiry & Reply Panel</h3>
+          <button class="modal-close" onclick="App.closeModal('inquiry-reply-modal')">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:20px; max-height:80vh; overflow-y:auto;">
+          <!-- Inquiry Overview Card -->
+          <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+              <div>
+                <h4 style="margin:0 0 4px 0; color:#1a1a1a; font-size:1.05rem;">
+                  <i class="fas fa-user-circle text-primary"></i> ${inq.name}
+                </h4>
+                <div style="font-size:0.85rem; color:#666;">
+                  <a href="mailto:${inq.email}" style="color:var(--primary); text-decoration:none;"><i class="fas fa-envelope"></i> ${inq.email}</a>
+                  ${inq.phone ? `<span style="margin:0 8px;">•</span><a href="tel:${inq.phone}" style="color:#666; text-decoration:none;"><i class="fas fa-phone"></i> ${inq.phone}</a>` : ''}
+                </div>
+              </div>
+              <div>
+                <span class="badge ${inq.status === 'Replied' ? 'badge-success' : 'badge-warning'}" style="font-size:0.8rem; padding:4px 10px;">
+                  ${inq.status || 'New'}
+                </span>
+              </div>
+            </div>
+
+            <div style="font-size:0.82rem; color:#555; margin-bottom:8px;">
+              <strong>Target Department:</strong> 
+              <span class="badge" style="background:#e8f5e9; color:#1b5e20; border:1px solid #c8e6c9;">
+                <i class="fas fa-envelope-open-text"></i> ${inq.target_email || 'admin@stevesmassage.co.ke'}
+              </span>
+              <span style="margin:0 8px;">•</span>
+              <strong>Received:</strong> ${inq.created_at || 'Recently'}
+            </div>
+
+            <div style="background:#fff; border-left:4px solid var(--accent, #c5a059); border-radius:6px; padding:12px; margin-top:10px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+              <div style="font-weight:700; font-size:0.92rem; margin-bottom:6px; color:#333;">
+                Subject: ${inq.subject}
+              </div>
+              <div style="font-size:0.88rem; color:#444; line-height:1.5; white-space:pre-wrap;">${inq.message}</div>
+            </div>
+          </div>
+
+          <!-- If already replied, display previous reply -->
+          ${inq.reply_message ? `
+            <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:14px; margin-bottom:16px;">
+              <div style="font-weight:700; color:#065f46; font-size:0.88rem; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fas fa-check-circle"></i> Official Response Recorded (by ${inq.replied_by || 'Management'})</span>
+                <span style="font-size:0.75rem; font-weight:normal; color:#047857;">${inq.replied_at || ''}</span>
+              </div>
+              <div style="font-size:0.86rem; color:#065f46; white-space:pre-wrap; line-height:1.45;">${inq.reply_message}</div>
+            </div>
+          ` : ''}
+
+          <!-- Response Form -->
+          <form onsubmit="event.preventDefault(); App.submitInquiryReply(${inq.id});">
+            <div class="form-group" style="margin-bottom:12px;">
+              <label style="font-weight:600; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span>${inq.reply_message ? 'Update Response / Send Follow-Up:' : 'Compose Official Response to Client:'}</span>
+                <span style="font-size:0.75rem; color:#888;">(Records in audit logs & notifies client)</span>
+              </label>
+              
+              <!-- Quick Template Selector -->
+              <div style="margin-bottom:8px;">
+                <select id="inquiry-quick-template" class="form-control" onchange="App.applyInquiryTemplate(this.value, '${encodeURIComponent(inq.name)}', '${encodeURIComponent(inq.subject)}')" style="font-size:0.82rem; padding:6px 10px; border-radius:6px; width:100%;">
+                  <option value="">⚡ Select Quick Response Template...</option>
+                  <option value="spa_welcome">Spa Booking & Session Consultation Confirmation</option>
+                  <option value="finance_ack">Billing, Pricing & M-Pesa Payment Support</option>
+                  <option value="inventory_supplier">Supplier, Logistics & Product Procurement Response</option>
+                  <option value="general_feedback">General Feedback & Customer Care Acknowledgement</option>
+                </select>
+              </div>
+
+              <textarea id="inquiry-reply-textarea" class="form-control" rows="5" required placeholder="Type your professional management response here..." style="font-size:0.9rem; line-height:1.5; resize:vertical; width:100%;">${inq.reply_message ? inq.reply_message : ''}</textarea>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="App.closeModal('inquiry-reply-modal')">Close</button>
+              <button type="submit" class="btn btn-gold btn-sm" id="btn-submit-inq-reply" style="display:inline-flex; align-items:center; gap:6px;">
+                <i class="fas fa-paper-plane"></i> <span>Send & Record Response</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add('show');
+  },
+
+  applyInquiryTemplate(templateKey, encodedName, encodedSubject) {
+    const textarea = document.getElementById('inquiry-reply-textarea');
+    if (!textarea || !templateKey) return;
+    const name = decodeURIComponent(encodedName || 'Client');
+    const subject = decodeURIComponent(encodedSubject || 'your inquiry');
+
+    let text = '';
+    if (templateKey === 'spa_welcome') {
+      text = `Dear ${name},\n\nThank you for reaching out to Steve's Massage Parlour regarding "${subject}". We would be delighted to assist you with your booking and customized therapeutic wellness session. Our certified therapists are available daily from 8:00 AM to 8:00 PM. Please let us know your preferred appointment date and time, or feel free to book directly through our online reservation portal.\n\nWarm regards,\nSpa Services Directorate\nSteve's Massage Parlour`;
+    } else if (templateKey === 'finance_ack') {
+      text = `Dear ${name},\n\nThank you for contacting our Accounts & Finance Directorate regarding "${subject}". We have verified our records. All official payments at Steve's Massage Parlour are processed securely via Safaricom M-Pesa Paybill / Till Number or direct accounts desk. If you need an official receipt or statement verification, please reply with your transaction reference.\n\nWarm regards,\nPatrick Mutua - Finance Director\nSteve's Massage Parlour`;
+    } else if (templateKey === 'inventory_supplier') {
+      text = `Dear ${name},\n\nThank you for your inquiry regarding "${subject}". Our Inventory and Supplies Management division reviews all vendor proposals and supply inquiries systematically against our quality standards and active stock thresholds. We will follow up with technical specifications as required.\n\nKind regards,\nMercy Chebet - Inventory Manager\nSteve's Massage Parlour`;
+    } else if (templateKey === 'general_feedback') {
+      text = `Dear ${name},\n\nThank you for getting in touch with the Executive Management of Steve's Massage Parlour. We have received your query regarding "${subject}" and our team is actively attending to it. We value your feedback and strive to ensure the highest standard of client wellness and satisfaction.\n\nSincerely,\nExecutive Management\nSteve's Massage Parlour`;
+    }
+    textarea.value = text;
+  },
+
+  async submitInquiryReply(inqId) {
+    const textarea = document.getElementById('inquiry-reply-textarea');
+    if (!textarea || !textarea.value.trim()) {
+      this.showToast('Please type a response before submitting.', 'warning');
+      return;
+    }
+    const replyMessage = textarea.value.trim();
+    const btn = document.getElementById('btn-submit-inq-reply');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    }
+
+    try {
+      const res = await this.api(`/api/inquiries/${inqId}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ reply_message: replyMessage })
+      });
+      this.showToast(res.message || 'Response recorded and sent to client!', 'success');
+      this.closeModal('inquiry-reply-modal');
+      this.loadNotifications();
+
+      // Refresh whatever portal view is currently active
+      if (typeof Admin !== 'undefined' && Admin.currentTab === 'inquiries') {
+        Admin.renderInquiries();
+      }
+      if (typeof FinanceManager !== 'undefined' && FinanceManager.currentTab === 'inquiries') {
+        FinanceManager.renderInquiries();
+      }
+      if (typeof ServiceManager !== 'undefined' && ServiceManager.currentTab === 'inquiries') {
+        ServiceManager.renderInquiries();
+      }
+      if (typeof InventoryManager !== 'undefined' && InventoryManager.activeSubTab === 'inquiries') {
+        InventoryManager.renderInquiriesTab();
+      }
+    } catch (err) {
+      this.showToast(err.message || 'Failed to submit response.', 'danger');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Send & Record Response</span>';
+      }
     }
   },
 
@@ -620,6 +936,11 @@ const App = {
       regForm.style.display = 'block';
     }
     modal.classList.add('show');
+  },
+
+  openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('show');
   },
 
   closeModal(modalId) {

@@ -1134,15 +1134,28 @@ const Admin = {
                       </span>
                     </td>
                     <td><strong>${inq.subject}</strong></td>
-                    <td style="max-width:300px;">${inq.message}</td>
-                    <td>${inq.created_at}</td>
+                    <td style="max-width:320px;">
+                      <div style="font-size:0.86rem; color:#333; line-height:1.4;">${inq.message}</div>
+                      ${inq.reply_message ? `
+                        <div style="margin-top:6px; padding:6px 10px; background:#ecfdf5; border-left:3px solid #10b981; border-radius:4px; font-size:0.78rem; color:#065f46;">
+                          <strong><i class="fas fa-check-circle"></i> Replied by ${inq.replied_by || 'Management'}:</strong>
+                          <div style="margin-top:2px; font-style:italic;">"${inq.reply_message.substring(0, 90)}${inq.reply_message.length > 90 ? '...' : ''}"</div>
+                        </div>
+                      ` : ''}
+                    </td>
+                    <td style="font-size:0.8rem; color:#666;">${inq.created_at}</td>
                     <td>
-                      <span class="badge ${inq.status === 'New' ? 'badge-warning' : 'badge-success'}">${inq.status}</span>
+                      <span class="badge ${inq.status === 'New' ? 'badge-warning' : 'badge-success'}" style="font-size:0.78rem;">${inq.status}</span>
                     </td>
                     <td>
-                      <button class="btn btn-outline btn-sm" onclick="Admin.toggleInquiryStatus(${inq.id}, '${inq.status === 'New' ? 'Replied' : 'New'}')">
-                        Mark as ${inq.status === 'New' ? 'Replied' : 'New'}
-                      </button>
+                      <div style="display:flex; flex-direction:column; gap:6px;">
+                        <button class="btn btn-gold btn-sm" onclick="App.openInquiryReplyModal(${inq.id})" style="display:inline-flex; align-items:center; gap:5px; font-size:0.78rem; padding:4px 8px; justify-content:center;">
+                          <i class="fas fa-reply"></i> ${inq.status === 'Replied' ? 'View / Edit Reply' : 'Reply to Client'}
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="Admin.toggleInquiryStatus(${inq.id}, '${inq.status === 'New' ? 'Replied' : 'New'}')" style="font-size:0.7rem; padding:2px 6px;">
+                          Mark ${inq.status === 'New' ? 'Replied' : 'New'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 `).join('')}

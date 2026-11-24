@@ -28,13 +28,15 @@ const InventoryManager = {
 
   async fetchData() {
     try {
-      const [items, suppliers, pos, movements, stats] = await Promise.all([
+      const [items, suppliers, pos, movements, stats, inquiries] = await Promise.all([
         App.api('/api/inventory'),
         App.api('/api/suppliers'),
         App.api('/api/purchase-orders'),
         App.api('/api/inventory/movements'),
-        App.api('/api/inventory/stats')
+        App.api('/api/inventory/stats'),
+        App.api('/api/inquiries').catch(() => [])
       ]);
+      this.inquiries = inquiries || [];
       this.items = items || [];
       this.suppliers = suppliers || [];
       this.pos = pos || [];
@@ -109,6 +111,9 @@ const InventoryManager = {
         <button class="inv-tab-pill ${this.activeSubTab === 'movements' ? 'active' : ''}" onclick="InventoryManager.switchSubTab('movements')">
           <i class="fas fa-history"></i> Stock Movements Log
         </button>
+        <button class="inv-tab-pill ${this.activeSubTab === 'inquiries' ? 'active' : ''}" onclick="InventoryManager.switchSubTab('inquiries')">
+          <i class="fas fa-comments text-gold"></i> Supplier & Stock Inquiries
+        </button>
       </div>
 
       <div id="inv-subview-content"></div>
@@ -137,7 +142,103 @@ const InventoryManager = {
       this.renderPurchaseOrders(content);
     } else if (this.activeSubTab === 'movements') {
       this.renderMovementsLog(content);
+    } else if (this.activeSubTab === 'inquiries') {
+      this.renderInquiriesTab(content);
     }
+  },
+
+  renderInquiriesTab(container) {
+    const invInqs = (this.inquiries || []).filter(i => (i.target_email || '').toLowerCase().includes('inventory'));
+
+    container.innerHTML = `
+      <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3 style="margin:0;"><i class="fas fa-comments text-gold"></i> Supplier & Inventory Communications</h3>
+            <p class="text-muted" style="margin:4px 0 0 0; font-size:0.85rem;">Vendor proposals, supply quotes, and inventory correspondence directed to the Inventory Directorate</p>
+          </div>
+          <div>
+            <button class="btn btn-outline btn-sm" onclick="InventoryManager.refreshInquiries()">
+              <i class="fas fa-sync-alt"></i> Refresh Inquiries
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header-bar">
+          <div>
+            <h4 style="margin:0;">Inquiries Directed to Inventory (${invInqs.length})</h4>
+            <p class="text-muted" style="font-size:0.8rem; margin:0;">Target email: inventory@stevesmassage.co.ke (Displaying all ${(this.inquiries || []).length} inquiries)</p>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Sender / Supplier</th>
+                <th>Target Email</th>
+                <th>Subject</th>
+                <th>Message & Official Response</th>
+                <th>Received At</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(this.inquiries || []).map(inq => {
+                const isInv = (inq.target_email || '').toLowerCase().includes('inventory');
+                return `
+                  <tr style="${isInv ? 'background:#f0fdf4;' : ''}">
+                    <td>
+                      <strong>${inq.name}</strong>
+                      <div class="text-muted" style="font-size:0.8rem;">
+                        <a href="mailto:${inq.email}" style="color:inherit;"><i class="fas fa-envelope"></i> ${inq.email}</a>
+                        ${inq.phone ? `<br><a href="tel:${inq.phone}" style="color:inherit;"><i class="fas fa-phone"></i> ${inq.phone}</a>` : ''}
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge" style="background:${isInv ? '#dcfce7; color:#15803d; border:1px solid #86efac;' : '#f3f4f6; color:#4b5563;'} font-size:0.75rem;">
+                        ${inq.target_email || 'admin@stevesmassage.co.ke'}
+                      </span>
+                    </td>
+                    <td><strong>${inq.subject}</strong></td>
+                    <td style="max-width:320px;">
+                      <div style="font-size:0.85rem; color:#333; line-height:1.4;">${inq.message}</div>
+                      ${inq.reply_message ? `
+                        <div style="margin-top:6px; padding:6px 10px; background:#ecfdf5; border-left:3px solid #10b981; border-radius:4px; font-size:0.78rem; color:#065f46;">
+                          <strong><i class="fas fa-check-circle"></i> Replied by ${inq.replied_by || 'Management'}:</strong>
+                          <div style="margin-top:2px; font-style:italic;">"${inq.reply_message.substring(0, 90)}${inq.reply_message.length > 90 ? '...' : ''}"</div>
+                        </div>
+                      ` : ''}
+                    </td>
+                    <td style="font-size:0.8rem; color:#666; white-space:nowrap;">${inq.created_at}</td>
+                    <td>
+                      <span class="badge ${inq.status === 'New' ? 'badge-warning' : 'badge-success'}" style="font-size:0.78rem;">${inq.status}</span>
+                    </td>
+                    <td>
+                      <button class="btn btn-gold btn-sm" onclick="App.openInquiryReplyModal(${inq.id})" style="display:inline-flex; align-items:center; gap:5px; font-size:0.78rem; padding:5px 10px; white-space:nowrap;">
+                        <i class="fas fa-reply"></i> ${inq.status === 'Replied' ? 'View / Edit Reply' : 'Reply to Client'}
+                      </button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  },
+
+  async refreshInquiries() {
+    try {
+      this.inquiries = await App.api('/api/inquiries');
+      if (this.activeSubTab === 'inquiries') {
+        const content = document.getElementById('inv-subview-content');
+        if (content) this.renderInquiriesTab(content);
+      }
+    } catch (_) {}
   },
 
   // 1. STOCK CATALOG VIEW

@@ -219,6 +219,9 @@ function initDatabase() {
       target_email TEXT DEFAULT 'admin@stevesmassage.co.ke',
       subject TEXT NOT NULL,
       message TEXT NOT NULL,
+      reply_message TEXT,
+      replied_by TEXT,
+      replied_at DATETIME,
       status TEXT NOT NULL DEFAULT 'New' CHECK(status IN ('New','Replied','Archived')),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -277,7 +280,10 @@ function initDatabase() {
     "ALTER TABLE payments ADD COLUMN finance_status TEXT DEFAULT 'Approved'",
     "ALTER TABLE payments ADD COLUMN finance_reviewed_by TEXT DEFAULT 'Patrick Mutua (Finance Officer)'",
     "ALTER TABLE payments ADD COLUMN finance_reviewed_at DATETIME",
-    "ALTER TABLE payments ADD COLUMN finance_notes TEXT"
+    "ALTER TABLE payments ADD COLUMN finance_notes TEXT",
+    "ALTER TABLE inquiries ADD COLUMN reply_message TEXT",
+    "ALTER TABLE inquiries ADD COLUMN replied_by TEXT",
+    "ALTER TABLE inquiries ADD COLUMN replied_at DATETIME"
   ];
   for (const m of migrations) {
     try { db.exec(m); } catch (_) {}
