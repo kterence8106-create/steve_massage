@@ -774,6 +774,7 @@ const App = {
       inquiryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const body = {
+          target_email: document.getElementById('inq-target-email')?.value || 'admin@stevesmassage.co.ke',
           name: document.getElementById('inq-name').value,
           email: document.getElementById('inq-email').value,
           phone: document.getElementById('inq-phone').value,

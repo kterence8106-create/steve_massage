@@ -1113,6 +1113,7 @@ const Admin = {
               <thead>
                 <tr>
                   <th>Sender</th>
+                  <th>Directed To (Management)</th>
                   <th>Subject</th>
                   <th>Message</th>
                   <th>Received At</th>
@@ -1126,6 +1127,11 @@ const Admin = {
                     <td>
                       <strong>${inq.name}</strong>
                       <div class="text-muted" style="font-size:0.8rem;">${inq.email} • ${inq.phone || 'No phone'}</div>
+                    </td>
+                    <td>
+                      <span class="badge" style="background:#e8f5e9; color:#1b5e20; border:1px solid #c8e6c9; font-weight:600; font-size:0.8rem;">
+                        <i class="fas fa-envelope-open-text"></i> ${inq.target_email || 'admin@stevesmassage.co.ke'}
+                      </span>
                     </td>
                     <td><strong>${inq.subject}</strong></td>
                     <td style="max-width:300px;">${inq.message}</td>

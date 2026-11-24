@@ -1115,10 +1115,20 @@ const server = http.createServer(async (req, res) => {
     // INQUIRIES
     // ========================================================
     if (pathname === '/api/inquiries' && method === 'POST') {
-      const { name, email, phone, subject, message } = await parseBody(req);
+      const { name, email, phone, target_email, subject, message } = await parseBody(req);
       if (!name || !email || !subject || !message) return sendError(res, 400, 'Name, email, subject, and message required');
-      db.prepare(`INSERT INTO inquiries (name, email, phone, subject, message, status) VALUES (?, ?, ?, ?, ?, 'New')`).run(name, email, phone || '', subject, message);
-      return sendJSON(res, 201, { message: "Thank you! Your message has been sent to Steve's Massage Parlor management." });
+      const recipientEmail = (target_email && target_email.trim()) ? target_email.trim() : 'admin@stevesmassage.co.ke';
+      db.prepare(`INSERT INTO inquiries (name, email, phone, target_email, subject, message, status) VALUES (?, ?, ?, ?, ?, ?, 'New')`).run(name, email, phone || '', recipientEmail, subject, message);
+      
+      // Notify target management recipient
+      try {
+        db.prepare(`INSERT INTO notifications (user_id, role_target, title, message, channel, recipient_phone, recipient_email) VALUES (NULL, 'admin', 'New Client Inquiry', ?, 'In-App', NULL, ?)`).run(
+          `New inquiry from ${name} (${email}) regarding "${subject}": ${message.substring(0, 100)}...`,
+          recipientEmail
+        );
+      } catch (_) {}
+
+      return sendJSON(res, 201, { message: `Thank you! Your message has been sent to ${recipientEmail}.` });
     }
 
     if (pathname === '/api/inquiries' && method === 'GET') {

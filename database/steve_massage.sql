@@ -225,12 +225,17 @@ CREATE TABLE notifications (
 -- 13. INQUIRIES TABLE
 CREATE TABLE inquiries (
     inquiry_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
+    target_email VARCHAR(100) DEFAULT 'admin@stevesmassage.co.ke',
     subject VARCHAR(150) NOT NULL,
     message TEXT NOT NULL,
-    status ENUM('new','replied') DEFAULT 'new',
+    admin_reply TEXT,
+    replied_by INT,
+    replied_at DATETIME,
+    status ENUM('new','read','in_progress','resolved','replied') DEFAULT 'new',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 

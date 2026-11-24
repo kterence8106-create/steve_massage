@@ -212,6 +212,7 @@ function initDatabase() {
       name TEXT NOT NULL,
       email TEXT NOT NULL,
       phone TEXT,
+      target_email TEXT DEFAULT 'admin@stevesmassage.co.ke',
       subject TEXT NOT NULL,
       message TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'New' CHECK(status IN ('New','Replied','Archived')),
@@ -267,7 +268,8 @@ function initDatabase() {
     "ALTER TABLE suppliers ADD COLUMN bank_name TEXT DEFAULT NULL",
     "ALTER TABLE suppliers ADD COLUMN bank_account TEXT DEFAULT NULL",
     "ALTER TABLE suppliers ADD COLUMN mpesa_paybill TEXT DEFAULT NULL",
-    "ALTER TABLE suppliers ADD COLUMN mpesa_till TEXT DEFAULT NULL"
+    "ALTER TABLE suppliers ADD COLUMN mpesa_till TEXT DEFAULT NULL",
+    "ALTER TABLE inquiries ADD COLUMN target_email TEXT DEFAULT 'admin@stevesmassage.co.ke'"
   ];
   for (const m of migrations) {
     try { db.exec(m); } catch (_) {}
@@ -659,9 +661,9 @@ function seedDatabase(db) {
   bgStmt.run('2026-11', 'Staff Commission & Training', 150000, 35000);
 
   // ---- 13. INQUIRIES ----
-  const inqStmt = db.prepare(`INSERT INTO inquiries (name, email, phone, subject, message, status) VALUES (?, ?, ?, ?, ?, ?)`);
-  inqStmt.run('Wanjiru Mwangi', 'wanjiru.m@gmail.com', '0710123456', 'Couple Massage Packages', 'Do you offer tandem couple massage rooms with customized aromatherapy on weekends?', 'New');
-  inqStmt.run('Captain George Omondi', 'captain.omondi@kenyaairways.com', '0722887766', 'Corporate Wellness Vouchers', 'We would like to purchase quarterly wellness massage gift vouchers for our cabin crew.', 'Replied');
+  const inqStmt = db.prepare(`INSERT INTO inquiries (name, email, phone, target_email, subject, message, status) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+  inqStmt.run('Wanjiru Mwangi', 'wanjiru.m@gmail.com', '0710123456', 'services@stevesmassage.co.ke', 'Couple Massage Packages', 'Do you offer tandem couple massage rooms with customized aromatherapy on weekends?', 'New');
+  inqStmt.run('Captain George Omondi', 'captain.omondi@kenyaairways.com', '0722887766', 'admin@stevesmassage.co.ke', 'Corporate Wellness Vouchers', 'We would like to purchase quarterly wellness massage gift vouchers for our cabin crew.', 'Replied');
 
   // ---- 14. NOTIFICATIONS ----
   const notifStmt = db.prepare(`INSERT INTO notifications (user_id, role_target, title, message, channel, recipient_phone, recipient_email) VALUES (?, ?, ?, ?, ?, ?, ?)`);
