@@ -101,7 +101,11 @@ function initDatabase() {
       payment_method TEXT NOT NULL CHECK(payment_method IN ('M-Pesa','Credit/Debit Card','Cash')),
       transaction_ref TEXT NOT NULL UNIQUE,
       phone_number TEXT,
-      status TEXT NOT NULL DEFAULT 'Completed' CHECK(status IN ('Pending','Completed','Refunded')),
+      status TEXT NOT NULL DEFAULT 'Completed' CHECK(status IN ('Pending','Completed','Refunded','Disputed')),
+      finance_status TEXT NOT NULL DEFAULT 'Approved' CHECK(finance_status IN ('Pending','Approved','Rejected')),
+      finance_reviewed_by TEXT,
+      finance_reviewed_at DATETIME,
+      finance_notes TEXT,
       paid_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(appointment_id) REFERENCES appointments(id),
       FOREIGN KEY(customer_id) REFERENCES users(id)
@@ -269,7 +273,11 @@ function initDatabase() {
     "ALTER TABLE suppliers ADD COLUMN bank_account TEXT DEFAULT NULL",
     "ALTER TABLE suppliers ADD COLUMN mpesa_paybill TEXT DEFAULT NULL",
     "ALTER TABLE suppliers ADD COLUMN mpesa_till TEXT DEFAULT NULL",
-    "ALTER TABLE inquiries ADD COLUMN target_email TEXT DEFAULT 'admin@stevesmassage.co.ke'"
+    "ALTER TABLE inquiries ADD COLUMN target_email TEXT DEFAULT 'admin@stevesmassage.co.ke'",
+    "ALTER TABLE payments ADD COLUMN finance_status TEXT DEFAULT 'Approved'",
+    "ALTER TABLE payments ADD COLUMN finance_reviewed_by TEXT DEFAULT 'Patrick Mutua (Finance Officer)'",
+    "ALTER TABLE payments ADD COLUMN finance_reviewed_at DATETIME",
+    "ALTER TABLE payments ADD COLUMN finance_notes TEXT"
   ];
   for (const m of migrations) {
     try { db.exec(m); } catch (_) {}

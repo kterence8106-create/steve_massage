@@ -108,7 +108,11 @@ CREATE TABLE payments (
     payment_method ENUM('cash','mpesa','card') NOT NULL DEFAULT 'mpesa',
     transaction_ref VARCHAR(100) NOT NULL UNIQUE,
     phone_number VARCHAR(20),
-    payment_status ENUM('pending','completed','failed','refunded') NOT NULL DEFAULT 'completed',
+    payment_status ENUM('pending','completed','failed','refunded','disputed') NOT NULL DEFAULT 'completed',
+    finance_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'approved',
+    finance_reviewed_by VARCHAR(100) DEFAULT 'Patrick Mutua (Finance Officer)',
+    finance_reviewed_at DATETIME,
+    finance_notes TEXT,
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_payment_appointment FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id) ON DELETE CASCADE,
     CONSTRAINT fk_payment_customer FOREIGN KEY (customer_id) REFERENCES users(user_id) ON DELETE CASCADE

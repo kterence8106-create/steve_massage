@@ -573,12 +573,26 @@ const Booking = {
           <span class="text-muted">Transaction Ref:</span>
           <code>${appt.transaction_ref}</code>
         </div>
+        <div class="receipt-row" style="background:#FFF9E6; border:1px solid #FFE082; padding:10px; border-radius:6px; margin:10px 0;">
+          <span style="color:#795548; font-weight:600;"><i class="fas fa-shield-alt text-gold"></i> Finance Approval:</span>
+          <span class="badge badge-warning" style="font-size:0.8rem; padding:4px 10px;">
+            <i class="fas fa-clock"></i> Awaiting Finance Clearance (Patrick Mutua)
+          </span>
+        </div>
         <div class="receipt-row" style="margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); font-size:1.1rem;">
-          <strong>Total Paid:</strong>
+          <strong>Total Paid / Due:</strong>
           <strong style="color:var(--primary);">KES ${Number(appt.price_kes).toLocaleString()}</strong>
         </div>
         <div style="margin-top:14px; background:var(--sage-light); padding:10px 14px; border-radius:8px; font-size:0.8rem; color:var(--primary);">
-          <i class="fas fa-sms"></i> <strong>SMS Notification Sent:</strong> A confirmation SMS with directions and reference has been dispatched to ${this.data.customer_phone}.
+          <i class="fas fa-sms"></i> <strong>SMS Notification Sent:</strong> A confirmation SMS with directions and reference has been dispatched to ${this.data.customer_phone}. Payment record is submitted for Finance verification.
+        </div>
+        <div style="margin-top:16px; display:flex; gap:10px; justify-content:center;">
+          <button class="btn btn-gold btn-sm" onclick="App.closeModal('booking-modal'); App.openPortal('customer');">
+            <i class="fas fa-user-circle"></i> View in My Client Portal
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Voucher
+          </button>
         </div>
       `;
 

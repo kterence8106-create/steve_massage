@@ -408,7 +408,8 @@ const server = http.createServer(async (req, res) => {
         SELECT a.*, u.name as customer_name, u.email as customer_email, u.phone as customer_phone,
                t.name as therapist_name, t.phone as therapist_phone,
                s.name as service_name, s.price_kes as service_price,
-               p.payment_method, p.status as payment_status, p.transaction_ref
+               p.id as payment_id, p.payment_method, p.status as payment_status, p.transaction_ref,
+               p.finance_status, p.finance_reviewed_by, p.finance_reviewed_at
         FROM appointments a
         JOIN users u ON a.customer_id = u.id
         JOIN therapists t ON a.therapist_id = t.id
@@ -503,12 +504,18 @@ const server = http.createServer(async (req, res) => {
       const transRef     = chosenMethod === 'M-Pesa' ? `MPESA-${crypto.randomBytes(4).toString('hex').toUpperCase()}` :
                            chosenMethod === 'Credit/Debit Card' ? `CARD-${crypto.randomBytes(4).toString('hex').toUpperCase()}` :
                            `CASH-${refNo}`;
-      const payStatus = chosenMethod === 'Cash' ? 'Pending' : 'Completed';
+      const payStatus = 'Pending';
+      const finStatus = 'Pending';
       const cleanMpesa = normalizePhone(mpesa_phone) || (customer ? customer.phone : '');
 
-      db.prepare(`INSERT INTO payments (appointment_id, customer_id, amount_kes, payment_method, transaction_ref, phone_number, status) VALUES (?, ?, ?, ?, ?, ?, ?)`).run(appointmentId, customerId, service.price_kes, chosenMethod, transRef, cleanMpesa, payStatus);
+      db.prepare(`INSERT INTO payments (appointment_id, customer_id, amount_kes, payment_method, transaction_ref, phone_number, status, finance_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(appointmentId, customerId, service.price_kes, chosenMethod, transRef, cleanMpesa, payStatus, finStatus);
 
-      // Auto-record finance income
+      // Finance approval notification for Patrick Mutua
+      db.prepare(`INSERT INTO notifications (role_target, title, message, channel, recipient_email) VALUES ('finance_manager', 'Customer Payment Awaiting Finance Approval', ?, 'In-App', 'finance@stevesmassage.co.ke')`).run(
+        `Client ${customer ? customer.name : 'Guest'} submitted a payment of KES ${Number(service.price_kes).toLocaleString()} via ${chosenMethod} (Ref: ${transRef}) for ${service.name}. Awaiting Finance clearance.`
+      );
+
+      // Auto-record finance income entry (pending clearance)
       db.prepare(`INSERT INTO finance_transactions (type, category, description, amount_kes, transaction_date, reference_no) VALUES (?, 'Service Revenue', ?, ?, ?, ?)`).run(
         'Income', `Appointment ${refNo} - ${service.name}`, service.price_kes, appointment_date, transRef
       );
@@ -545,7 +552,8 @@ const server = http.createServer(async (req, res) => {
           appointment_date, appointment_time,
           service_name: service.name, therapist_name: therapist.name,
           price_kes: service.price_kes, status: 'Confirmed',
-          transaction_ref: transRef, payment_status: payStatus
+          transaction_ref: transRef, payment_status: payStatus,
+          finance_status: finStatus
         }
       });
     }
@@ -602,7 +610,141 @@ const server = http.createServer(async (req, res) => {
       const { phone_number, amount_kes } = await parseBody(req);
       if (!phone_number || !amount_kes) return sendError(res, 400, 'Phone number and amount required');
       const mpesaRef = `MP${Math.floor(10000000 + Math.random() * 90000000)}KES`;
-      return sendJSON(res, 200, { success: true, message: `M-Pesa STK push sent to ${phone_number}.`, transaction_ref: mpesaRef, amount_kes, status: 'Completed' });
+      return sendJSON(res, 200, { success: true, message: `M-Pesa STK push prompt sent to ${phone_number}.`, transaction_ref: mpesaRef, amount_kes, status: 'Pending' });
+    }
+
+    // Customer submits a payment for an appointment
+    if (pathname === '/api/payments' && method === 'POST') {
+      if (!user) return sendError(res, 401, 'Please log in to make a payment');
+      const { appointment_id, payment_method, phone_number, transaction_ref, notes } = await parseBody(req);
+      if (!appointment_id) return sendError(res, 400, 'Appointment ID is required');
+
+      const appt = db.prepare(`SELECT a.*, s.name as service_name, s.price_kes FROM appointments a JOIN services s ON a.service_id = s.id WHERE a.id = ?`).get(appointment_id);
+      if (!appt) return sendError(res, 404, 'Appointment not found');
+
+      if (user.role === 'customer' && appt.customer_id !== user.userId) {
+        return sendError(res, 403, 'Unauthorized to pay for this appointment');
+      }
+
+      const method = payment_method || 'M-Pesa';
+      const ref = transaction_ref || (method === 'M-Pesa' ? `MPESA-${crypto.randomBytes(4).toString('hex').toUpperCase()}` : `PAY-${crypto.randomBytes(4).toString('hex').toUpperCase()}`);
+      const cleanPhone = normalizePhone(phone_number) || user.phone || '';
+
+      const existingPayment = db.prepare('SELECT id, status, finance_status FROM payments WHERE appointment_id = ?').get(appointment_id);
+
+      let paymentId;
+      if (existingPayment) {
+        db.prepare(`UPDATE payments SET amount_kes = ?, payment_method = ?, transaction_ref = ?, phone_number = ?, status = 'Pending', finance_status = 'Pending', finance_reviewed_by = NULL, finance_reviewed_at = NULL, paid_at = CURRENT_TIMESTAMP WHERE id = ?`).run(
+          appt.price_kes, method, ref, cleanPhone, existingPayment.id
+        );
+        paymentId = existingPayment.id;
+      } else {
+        const ins = db.prepare(`INSERT INTO payments (appointment_id, customer_id, amount_kes, payment_method, transaction_ref, phone_number, status, finance_status) VALUES (?, ?, ?, ?, ?, ?, 'Pending', 'Pending')`).run(
+          appointment_id, appt.customer_id, appt.price_kes, method, ref, cleanPhone
+        );
+        paymentId = Number(ins.lastInsertRowid);
+      }
+
+      // Notify Finance Director Patrick Mutua
+      try {
+        db.prepare(`INSERT INTO notifications (role_target, title, message, channel, recipient_email) VALUES ('finance_manager', 'Customer Payment Awaiting Finance Approval', ?, 'In-App', 'finance@stevesmassage.co.ke')`).run(
+          `Customer ${user.name} submitted payment of KES ${Number(appt.price_kes).toLocaleString()} via ${method} (Ref: ${ref}) for ${appt.service_name} (${appt.reference_no}). Awaiting Finance verification.`
+        );
+      } catch (_) {}
+
+      return sendJSON(res, 201, {
+        success: true,
+        message: 'Payment submitted successfully! Your payment is now pending Finance Department verification and approval.',
+        payment_id: paymentId,
+        transaction_ref: ref,
+        amount_kes: appt.price_kes,
+        finance_status: 'Pending'
+      });
+    }
+
+    // Finance approves customer payment
+    if (pathname.match(/^\/api\/payments\/(\d+)\/approve$/) && method === 'POST') {
+      if (!user || (user.role !== 'admin' && user.role !== 'finance_manager')) return sendError(res, 403, 'Finance access required');
+      const payId = pathname.split('/')[3];
+      const { notes } = await parseBody(req);
+
+      const payment = db.prepare(`
+        SELECT p.*, a.reference_no, a.customer_id as appt_cust_id, s.name as service_name 
+        FROM payments p 
+        LEFT JOIN appointments a ON p.appointment_id = a.id 
+        LEFT JOIN services s ON a.service_id = s.id 
+        WHERE p.id = ?
+      `).get(payId);
+
+      if (!payment) return sendError(res, 404, 'Payment not found');
+
+      const reviewer = user.name || 'Patrick Mutua (Finance Officer)';
+      const reviewNotes = (notes && notes.trim()) ? notes.trim() : 'Verified and cleared against bank/M-Pesa statement by Finance Office';
+
+      db.prepare(`
+        UPDATE payments 
+        SET status = 'Completed', 
+            finance_status = 'Approved', 
+            finance_reviewed_by = ?, 
+            finance_reviewed_at = CURRENT_TIMESTAMP, 
+            finance_notes = ? 
+        WHERE id = ?
+      `).run(reviewer, reviewNotes, payId);
+
+      // Record in finance_transactions ledger
+      try {
+        const existingTx = db.prepare("SELECT id FROM finance_transactions WHERE reference_no = ?").get(payment.transaction_ref);
+        if (!existingTx) {
+          db.prepare(`INSERT INTO finance_transactions (type, category, description, amount_kes, transaction_date, reference_no) VALUES ('Income','Service Revenue',?,DATE('now'),?)`).run(
+            `Service Payment: ${payment.reference_no || 'Ref-' + payment.id} (${payment.service_name || 'Massage Therapy'})`,
+            payment.amount_kes,
+            payment.transaction_ref
+          );
+        }
+      } catch (_) {}
+
+      // Notify customer
+      try {
+        db.prepare(`INSERT INTO notifications (user_id, title, message, channel) VALUES (?, 'Payment Approved & Cleared', ?, 'In-App')`).run(
+          payment.customer_id,
+          `Your payment of KES ${Number(payment.amount_kes).toLocaleString()} (Ref: ${payment.transaction_ref}) for ${payment.service_name || 'Massage Session'} has been APPROVED & CLEARED by Steve's Massage Parlour Finance Office.`
+        );
+      } catch (_) {}
+
+      return sendJSON(res, 200, { success: true, message: 'Payment officially approved and cleared by Finance.' });
+    }
+
+    // Finance rejects customer payment
+    if (pathname.match(/^\/api\/payments\/(\d+)\/reject$/) && method === 'POST') {
+      if (!user || (user.role !== 'admin' && user.role !== 'finance_manager')) return sendError(res, 403, 'Finance access required');
+      const payId = pathname.split('/')[3];
+      const { notes } = await parseBody(req);
+
+      const payment = db.prepare(`SELECT p.*, a.reference_no, s.name as service_name FROM payments p LEFT JOIN appointments a ON p.appointment_id = a.id LEFT JOIN services s ON a.service_id = s.id WHERE p.id = ?`).get(payId);
+      if (!payment) return sendError(res, 404, 'Payment not found');
+
+      const reviewer = user.name || 'Patrick Mutua (Finance Officer)';
+      const reviewNotes = (notes && notes.trim()) ? notes.trim() : 'Payment rejected during finance audit';
+
+      db.prepare(`
+        UPDATE payments 
+        SET status = 'Disputed', 
+            finance_status = 'Rejected', 
+            finance_reviewed_by = ?, 
+            finance_reviewed_at = CURRENT_TIMESTAMP, 
+            finance_notes = ? 
+        WHERE id = ?
+      `).run(reviewer, reviewNotes, payId);
+
+      // Notify customer
+      try {
+        db.prepare(`INSERT INTO notifications (user_id, title, message, channel) VALUES (?, 'Payment Verification Alert', ?, 'In-App')`).run(
+          payment.customer_id,
+          `Your payment reference ${payment.transaction_ref} could not be verified by Finance: "${reviewNotes}". Please contact front desk.`
+        );
+      } catch (_) {}
+
+      return sendJSON(res, 200, { success: true, message: 'Payment marked as rejected/disputed.' });
     }
 
     if (pathname.match(/^\/api\/payments\/(\d+)\/confirm$/) && method === 'POST') {

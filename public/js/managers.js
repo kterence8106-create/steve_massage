@@ -39,7 +39,7 @@ const FinanceManager = {
         <button class="portal-tab" id="fin-tab-po-approvals" onclick="FinanceManager.switchTab('po-approvals')"><i class="fas fa-clipboard-check"></i> PO Approvals <span id="fin-po-pending-badge" class="badge badge-danger" style="display:none; margin-left:6px;">0</span></button>
         <button class="portal-tab" id="fin-tab-supplier-payments" onclick="FinanceManager.switchTab('supplier-payments')"><i class="fas fa-money-check-alt"></i> Supplier Disbursements <span id="fin-unpaid-badge" class="badge badge-warning" style="display:none; margin-left:6px;">0</span></button>
         <button class="portal-tab" id="fin-tab-supplies" onclick="FinanceManager.switchTab('supplies')"><i class="fas fa-boxes"></i> Inventory & Supplies Valuation</button>
-        <button class="portal-tab" id="fin-tab-payments" onclick="FinanceManager.switchTab('payments')"><i class="fas fa-receipt"></i> Customer Billings (M-Pesa)</button>
+        <button class="portal-tab" id="fin-tab-payments" onclick="FinanceManager.switchTab('payments')"><i class="fas fa-receipt"></i> Customer Billings (M-Pesa) <span id="fin-cust-pending-badge" class="badge badge-warning" style="display:none; margin-left:6px;">0</span></button>
         <button class="portal-tab" id="fin-tab-expenses" onclick="FinanceManager.switchTab('expenses')"><i class="fas fa-file-invoice-dollar"></i> Expense & PO Disbursements</button>
         <button class="portal-tab" id="fin-tab-budgets" onclick="FinanceManager.switchTab('budgets')"><i class="fas fa-balance-scale"></i> Department Budgets</button>
       </div>
@@ -307,21 +307,42 @@ const FinanceManager = {
 
     try {
       const payments = await App.api('/api/payments');
-      const totalCollected = payments.filter(p => p.status === 'Completed').reduce((sum, p) => sum + p.amount_kes, 0);
+      const totalCollected = payments.filter(p => p.finance_status === 'Approved' || p.status === 'Completed').reduce((sum, p) => sum + p.amount_kes, 0);
+      const pendingApprovals = payments.filter(p => p.finance_status === 'Pending');
+
+      // Update badge on tab
+      const badge = document.getElementById('fin-cust-pending-badge');
+      if (badge) {
+        badge.innerText = pendingApprovals.length;
+        badge.style.display = pendingApprovals.length > 0 ? 'inline-block' : 'none';
+      }
 
       container.innerHTML = `
+        <!-- Pending Approval Alert Banner -->
+        ${pendingApprovals.length > 0 ? `
+          <div style="background:#FFF9E6; border:1px solid #FFE082; border-radius:10px; padding:18px 22px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h4 style="margin:0 0 4px; color:#795548;"><i class="fas fa-shield-alt text-gold"></i> Customer Payments Awaiting Finance Clearance</h4>
+              <p style="margin:0; font-size:0.86rem; color:#5D4037;">
+                There are <strong>${pendingApprovals.length}</strong> customer payments (Total: <strong>KES ${pendingApprovals.reduce((s,p)=>s+p.amount_kes,0).toLocaleString()}</strong>) awaiting official verification against Steve's Massage Parlour receiving accounts.
+              </p>
+            </div>
+            <span class="badge badge-warning" style="font-size:0.9rem; padding:8px 16px;"><i class="fas fa-clock"></i> ${pendingApprovals.length} Awaiting Approval</span>
+          </div>
+        ` : ''}
+
         <!-- Business Payment Info Banner -->
         <div style="background:linear-gradient(135deg,#1a472a 0%,#2d6a4f 100%); color:#fff; border-radius:10px; padding:18px 24px; margin-bottom:20px; display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:center;">
           <div>
             <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; opacity:0.8; margin-bottom:4px;"><i class="fas fa-university"></i> Business Receiving Account (Customers Pay Here)</div>
             <div style="font-size:1.05rem; font-weight:700;">Steve's Massage Parlour Ltd</div>
-            <div style="font-size:0.85rem; opacity:0.9; margin-top:3px;">Equity Bank Kenya — Valley Arcade Branch</div>
+            <div style="font-size:0.85rem; opacity:0.9; margin-top:3px;">Equity Bank Kenya - Valley Arcade Branch</div>
             <div style="font-size:0.85rem; opacity:0.9;">Account No: <strong style="font-family:monospace; font-size:1rem; letter-spacing:1px;">0023456789</strong></div>
           </div>
           <div style="border-left:1px solid rgba(255,255,255,0.3); padding-left:18px;">
-            <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; opacity:0.8; margin-bottom:4px;"><i class="fas fa-mobile-alt"></i> M-Pesa Details</div>
+            <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; opacity:0.8; margin-bottom:4px;"><i class="fas fa-mobile-alt"></i> Official Receiving Channels</div>
             <div style="font-size:0.88rem; opacity:0.95; margin-bottom:2px;"><span style="opacity:0.75;">Paybill:</span> <span style="font-family:monospace; font-size:1.2rem; font-weight:900; color:#A8EDBB;">400200</span></div>
-            <div style="font-size:0.85rem; opacity:0.9;"><span style="opacity:0.75;">Account No:</span> <span style="font-family:monospace; font-weight:700;">Your Booking Reference</span></div>
+            <div style="font-size:0.85rem; opacity:0.9;"><span style="opacity:0.75;">Account No:</span> <span style="font-family:monospace; font-weight:700;">Client Booking Reference</span></div>
             <div style="font-size:0.82rem; opacity:0.75; margin-top:3px;">Buy Goods Till No: <strong style="font-family:monospace; color:#A8EDBB;">5278441</strong></div>
           </div>
         </div>
@@ -329,10 +350,10 @@ const FinanceManager = {
         <div class="table-card">
           <div class="table-header-bar">
             <div>
-              <h3><i class="fas fa-receipt text-gold"></i> Client Billings & M-Pesa Receipts</h3>
-              <p class="text-muted" style="font-size:0.8rem; margin:0;">Verified transactions from customer massage therapy sessions</p>
+              <h3><i class="fas fa-receipt text-gold"></i> Client Billings & Payment Approval Ledger</h3>
+              <p class="text-muted" style="font-size:0.8rem; margin:0;">Audit, review, and clear customer M-Pesa, Card, and Cash settlements</p>
             </div>
-            <span class="badge badge-success">Total Collected: KES ${Number(totalCollected).toLocaleString()}</span>
+            <span class="badge badge-success">Total Cleared: KES ${Number(totalCollected).toLocaleString()}</span>
           </div>
 
           <div class="table-responsive">
@@ -345,17 +366,19 @@ const FinanceManager = {
                   <th>Amount (KES)</th>
                   <th>Payment Method</th>
                   <th>Transaction Reference</th>
-                  <th>Phone Number</th>
                   <th>Date & Time</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th>Finance Clearance Status</th>
+                  <th>Finance Action</th>
                 </tr>
               </thead>
               <tbody>
                 ${payments.map(p => `
-                  <tr>
+                  <tr style="${p.finance_status === 'Pending' ? 'background:#FFFDF6;' : ''}">
                     <td><strong>${p.reference_no}</strong></td>
-                    <td>${p.customer_name}</td>
+                    <td>
+                      <strong>${p.customer_name}</strong>
+                      <div class="text-muted" style="font-size:0.75rem;">${p.phone_number || ''}</div>
+                    </td>
                     <td>${p.service_name}</td>
                     <td><strong>KES ${Number(p.amount_kes).toLocaleString()}</strong></td>
                     <td>
@@ -364,15 +387,41 @@ const FinanceManager = {
                       </span>
                     </td>
                     <td><code>${p.transaction_ref}</code></td>
-                    <td>${p.phone_number || '—'}</td>
                     <td><small>${p.paid_at ? p.paid_at.substring(0, 16) : 'N/A'}</small></td>
-                    <td><span class="badge ${p.status === 'Completed' ? 'badge-success' : 'badge-gold'}">${p.status}</span></td>
                     <td>
-                      ${p.status === 'Pending' ? `
-                        <button class="btn btn-gold btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="FinanceManager.markPaymentReceived(${p.id})">
-                          <i class="fas fa-check"></i> Collect Cash
+                      ${p.finance_status === 'Approved' ? `
+                        <span class="badge badge-success" title="Approved by ${p.finance_reviewed_by || 'Finance'}">
+                          <i class="fas fa-check-double"></i> Cleared (${p.finance_reviewed_by ? p.finance_reviewed_by.split(' ')[0] : 'Finance'})
+                        </span>
+                      ` : (p.finance_status === 'Rejected' ? `
+                        <span class="badge badge-danger">
+                          <i class="fas fa-times-circle"></i> Rejected
+                        </span>
+                      ` : `
+                        <span class="badge badge-warning" style="font-weight:700;">
+                          <i class="fas fa-clock"></i> Awaiting Approval
+                        </span>
+                      `)}
+                    </td>
+                    <td>
+                      ${p.finance_status === 'Pending' ? `
+                        <div style="display:flex; gap:6px;">
+                          <button class="btn btn-success btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="FinanceManager.approveCustomerPayment(${p.id})">
+                            <i class="fas fa-check"></i> Approve
+                          </button>
+                          <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.75rem; color:#C0392B; border-color:#C0392B;" onclick="FinanceManager.rejectCustomerPayment(${p.id})">
+                            <i class="fas fa-times"></i> Reject
+                          </button>
+                        </div>
+                      ` : (p.finance_status === 'Approved' ? `
+                        <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="FinanceManager.viewCustomerReceipt(${p.id})">
+                          <i class="fas fa-print"></i> Voucher
                         </button>
-                      ` : '<span class="text-muted"><i class="fas fa-check-circle text-success"></i> Settled</span>'}
+                      ` : `
+                        <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="FinanceManager.approveCustomerPayment(${p.id})">
+                          <i class="fas fa-redo"></i> Re-Approve
+                        </button>
+                      `)}
                     </td>
                   </tr>
                 `).join('')}
@@ -386,16 +435,100 @@ const FinanceManager = {
     }
   },
 
-  async markPaymentReceived(paymentId) {
+  async approveCustomerPayment(paymentId) {
+    const notes = prompt('Enter audit verification note (or click OK to confirm):', 'Daraja M-Pesa / Bank statement transaction verified and cleared');
+    if (notes === null) return;
+
     try {
-      await App.api(`/api/payments/${paymentId}/confirm`, { method: 'POST' });
-      App.showToast('Payment confirmed and recorded in financial ledger!');
+      const res = await App.api(`/api/payments/${paymentId}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ notes })
+      });
+      App.showToast(res.message || 'Payment successfully approved by Finance!', 'success');
       this.renderCustomerPayments();
     } catch (err) {
       App.showToast(err.message, 'danger');
     }
   },
 
+  async rejectCustomerPayment(paymentId) {
+    const notes = prompt('Please enter the reason for rejecting/disputing this payment:', 'Transaction reference not found in M-Pesa / Bank receiving records');
+    if (notes === null) return;
+
+    try {
+      const res = await App.api(`/api/payments/${paymentId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ notes })
+      });
+      App.showToast(res.message || 'Payment flagged as disputed.', 'warning');
+      this.renderCustomerPayments();
+    } catch (err) {
+      App.showToast(err.message, 'danger');
+    }
+  },
+
+  async markPaymentReceived(paymentId) {
+    return this.approveCustomerPayment(paymentId);
+  },
+
+  async viewCustomerReceipt(paymentId) {
+    try {
+      const payments = await App.api('/api/payments');
+      const p = payments.find(x => x.id === paymentId);
+      if (!p) return App.showToast('Payment record not found', 'danger');
+
+      let modal = document.getElementById('finance-cust-voucher-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'finance-cust-voucher-modal';
+        modal.className = 'modal-overlay';
+        document.body.appendChild(modal);
+      }
+
+      modal.innerHTML = `
+        <div class="modal-card" style="max-width:540px;">
+          <div class="modal-header">
+            <h3><i class="fas fa-file-invoice text-gold"></i> Official Finance Clearance Voucher</h3>
+            <button class="btn-close-modal" onclick="App.closeModal('finance-cust-voucher-modal')">&times;</button>
+          </div>
+          <div class="modal-body" style="padding:22px;">
+            <div style="text-align:center; border-bottom:2px solid #2D6A4F; padding-bottom:12px; margin-bottom:16px;">
+              <h3 style="margin:0; color:#1A472A;">STEVE'S MASSAGE PARLOUR LTD</h3>
+              <p style="margin:2px 0; font-size:0.8rem; color:#666;">Valley Arcade, Gitanga Rd, Nairobi &bull; Licensed Wellness Sanctuary</p>
+              <span class="badge badge-success" style="font-size:0.85rem; padding:4px 12px; margin-top:6px;">
+                <i class="fas fa-check-double"></i> OFFICIAL FINANCE CLEARANCE VOUCHER
+              </span>
+            </div>
+
+            <table style="width:100%; font-size:0.9rem; line-height:1.8;">
+              <tr><td class="text-muted">Booking Reference:</td><td><strong>${p.reference_no}</strong></td></tr>
+              <tr><td class="text-muted">Client Name:</td><td><strong>${p.customer_name}</strong></td></tr>
+              <tr><td class="text-muted">Treatment Service:</td><td>${p.service_name}</td></tr>
+              <tr><td class="text-muted">Amount Cleared:</td><td><strong style="color:#1A472A; font-size:1.1rem;">KES ${Number(p.amount_kes).toLocaleString()}</strong></td></tr>
+              <tr><td class="text-muted">Payment Method:</td><td>${p.payment_method}</td></tr>
+              <tr><td class="text-muted">Transaction Code:</td><td><code>${p.transaction_ref}</code></td></tr>
+              <tr><td class="text-muted">Settlement Date:</td><td>${p.paid_at || 'N/A'}</td></tr>
+              <tr><td class="text-muted">Approved By:</td><td><strong>${p.finance_reviewed_by || 'Patrick Mutua (Finance Officer)'}</strong></td></tr>
+              <tr><td class="text-muted">Audit Notes:</td><td><em>${p.finance_notes || 'Verified against bank/M-Pesa Daraja records'}</em></td></tr>
+            </table>
+
+            <div style="margin-top:20px; border-top:1px dashed #DDD; padding-top:14px; text-align:center; font-size:0.8rem; color:#777;">
+              Digitally certified by Steve's Massage Parlour Internal Audit &amp; Finance Office.
+            </div>
+
+            <div style="margin-top:18px; display:flex; gap:10px; justify-content:center;">
+              <button class="btn btn-gold btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print Voucher</button>
+              <button class="btn btn-outline btn-sm" onclick="App.closeModal('finance-cust-voucher-modal')">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      App.openModal('finance-cust-voucher-modal');
+    } catch (err) {
+      App.showToast(err.message, 'danger');
+    }
+  },
   // Expenses Tab
   async renderExpenses() {
     const container = document.getElementById('finance-main-view');

@@ -860,7 +860,21 @@ const Customer = {
         return;
       }
 
+      const pendingPaymentAppts = appointments.filter(a => a.status !== 'Cancelled' && a.finance_status !== 'Approved');
+
       area.innerHTML = `
+        ${pendingPaymentAppts.length > 0 ? `
+          <div style="background:#FFF9E6; border:1px solid #FFE082; padding:16px 20px; border-radius:12px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h4 style="margin:0 0 4px; color:#795548;"><i class="fas fa-wallet text-gold"></i> Payment Settlement Required</h4>
+              <p style="margin:0; font-size:0.86rem; color:#5D4037;">You have <strong>${pendingPaymentAppts.length}</strong> booking(s) awaiting payment or Finance Department verification. Please pay via M-Pesa or Card to secure your slot.</p>
+            </div>
+            <button class="btn btn-gold btn-sm" onclick="Customer.openPayModal(${pendingPaymentAppts[0].id}, '${pendingPaymentAppts[0].reference_no}', '${pendingPaymentAppts[0].service_name}', ${pendingPaymentAppts[0].total_price_kes})">
+              <i class="fas fa-money-bill-wave"></i> Pay for ${pendingPaymentAppts[0].reference_no} Now
+            </button>
+          </div>
+        ` : ''}
+
         <div class="table-card">
           <div class="table-header-bar">
             <h3>My Booked Massage Sessions</h3>
@@ -876,7 +890,7 @@ const Customer = {
                   <th>Date & Time</th>
                   <th>Total (KES)</th>
                   <th>Status</th>
-                  <th>Payment</th>
+                  <th>Payment & Finance Clearance</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -894,20 +908,35 @@ const Customer = {
                       </span>
                     </td>
                     <td>
-                      <span class="badge ${a.payment_status === 'Completed' ? 'badge-success' : 'badge-warning'}">
-                        ${a.payment_method || 'M-Pesa'} (${a.payment_status || 'Pending'})
-                      </span>
+                      ${a.finance_status === 'Approved' ? `
+                        <span class="badge badge-success" title="Cleared by ${a.finance_reviewed_by || 'Finance'}">
+                          <i class="fas fa-check-circle"></i> Paid & Approved
+                        </span>
+                      ` : (a.finance_status === 'Rejected' ? `
+                        <span class="badge badge-danger">
+                          <i class="fas fa-exclamation-triangle"></i> Disputed
+                        </span>
+                      ` : `
+                        <span class="badge badge-warning">
+                          <i class="fas fa-clock"></i> Awaiting Finance Clearance
+                        </span>
+                      `)}
                     </td>
                     <td>
-                      ${a.status !== 'Cancelled' && a.status !== 'Completed' ? `
-                        <button class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);" onclick="Customer.cancelBooking(${a.id})">
-                          Cancel
-                        </button>
-                      ` : `
+                      ${a.status !== 'Cancelled' && a.finance_status !== 'Approved' ? `
+                        <div style="display:flex; gap:6px;">
+                          <button class="btn btn-gold btn-sm" style="padding:4px 8px; font-size:0.75rem;" onclick="Customer.openPayModal(${a.id}, '${a.reference_no}', '${a.service_name}', ${a.total_price_kes})">
+                            <i class="fas fa-credit-card"></i> Pay Now
+                          </button>
+                          <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.75rem; color:var(--danger); border-color:var(--danger);" onclick="Customer.cancelBooking(${a.id})">
+                            Cancel
+                          </button>
+                        </div>
+                      ` : (a.status !== 'Cancelled' ? `
                         <button class="btn btn-outline btn-sm" onclick="Booking.viewReceipt('${a.reference_no}', '${a.service_name}', '${a.therapist_name}', '${a.appointment_date}', '${a.appointment_time}', ${a.total_price_kes}, '${a.payment_method || 'M-Pesa'}')">
                           <i class="fas fa-print"></i> Receipt
                         </button>
-                      `}
+                      ` : '<span class="text-muted">—</span>')}
                     </td>
                   </tr>
                 `).join('')}
@@ -947,7 +976,7 @@ const Customer = {
                   <th>Method</th>
                   <th>Transaction Ref</th>
                   <th>Date Paid</th>
-                  <th>Status</th>
+                  <th>Finance Clearance Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -958,8 +987,22 @@ const Customer = {
                     <td>KES ${Number(p.amount_kes).toLocaleString()}</td>
                     <td><span class="badge badge-primary">${p.payment_method}</span></td>
                     <td><code>${p.transaction_ref}</code></td>
-                    <td>${p.paid_at}</td>
-                    <td><span class="badge badge-success">${p.status}</span></td>
+                    <td>${p.paid_at ? p.paid_at.substring(0, 16) : 'N/A'}</td>
+                    <td>
+                      ${p.finance_status === 'Approved' ? `
+                        <span class="badge badge-success" title="Approved by ${p.finance_reviewed_by || 'Finance'}">
+                          <i class="fas fa-check-double"></i> Approved & Cleared
+                        </span>
+                      ` : (p.finance_status === 'Rejected' ? `
+                        <span class="badge badge-danger">
+                          <i class="fas fa-times-circle"></i> Disputed
+                        </span>
+                      ` : `
+                        <span class="badge badge-warning">
+                          <i class="fas fa-clock"></i> Pending Finance Approval
+                        </span>
+                      `)}
+                    </td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -969,6 +1012,155 @@ const Customer = {
       `;
     } catch (err) {
       App.showToast(err.message, 'danger');
+    }
+  },
+
+  openPayModal(apptId, refNo, serviceName, amount) {
+    let payModal = document.getElementById('customer-pay-modal');
+    if (!payModal) {
+      payModal = document.createElement('div');
+      payModal.id = 'customer-pay-modal';
+      payModal.className = 'modal-overlay';
+      document.body.appendChild(payModal);
+    }
+
+    payModal.innerHTML = `
+      <div class="modal-card" style="max-width:540px;">
+        <div class="modal-header">
+          <h3><i class="fas fa-credit-card text-gold"></i> Settle Appointment Payment</h3>
+          <button class="btn-close-modal" onclick="App.closeModal('customer-pay-modal')">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:20px;">
+          <!-- Summary Box -->
+          <div style="background:#F8F9FA; border:1px solid #E9ECEF; border-radius:10px; padding:16px; margin-bottom:18px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span class="text-muted">Booking Reference:</span>
+              <strong>${refNo}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span class="text-muted">Service / Treatment:</span>
+              <span>${serviceName}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed #DDD; padding-top:8px; margin-top:8px; font-size:1.1rem;">
+              <strong>Amount Payable:</strong>
+              <strong style="color:var(--primary);">KES ${Number(amount).toLocaleString()}</strong>
+            </div>
+          </div>
+
+          <!-- Business Payment Receiving Channels -->
+          <div style="background:linear-gradient(135deg,#1a472a 0%,#2d6a4f 100%); color:#fff; border-radius:10px; padding:14px 18px; margin-bottom:18px;">
+            <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; opacity:0.85; margin-bottom:4px;">
+              <i class="fas fa-university"></i> Steve's Massage Parlour Receiving Channels
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; font-size:0.88rem;">
+              <div>
+                <span style="opacity:0.8;">M-Pesa Paybill:</span> <strong style="font-family:monospace; color:#A8EDBB; font-size:1.05rem;">400200</strong><br>
+                <span style="opacity:0.8;">Account No:</span> <strong style="font-family:monospace;">${refNo}</strong>
+              </div>
+              <div>
+                <span style="opacity:0.8;">Buy Goods / Till:</span> <strong style="font-family:monospace; color:#A8EDBB; font-size:1.05rem;">5278441</strong><br>
+                <span style="opacity:0.8;">Equity Bank:</span> <strong style="font-family:monospace;">0023456789</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Method Options -->
+          <form id="cust-settle-pay-form" onsubmit="event.preventDefault(); Customer.submitAppointmentPayment(${apptId});">
+            <div class="form-group">
+              <label>Select Payment Method *</label>
+              <select id="cust-pay-method" class="form-control" required onchange="Customer.togglePayInputs()">
+                <option value="M-Pesa">Safaricom M-Pesa (STK Push or Manual Ref)</option>
+                <option value="Credit/Debit Card">Credit / Debit Card</option>
+                <option value="Cash">Cash at Sanctuary Desk</option>
+              </select>
+            </div>
+
+            <!-- M-Pesa Fields -->
+            <div id="cust-mpesa-group">
+              <div class="form-group">
+                <label>M-Pesa Phone Number (for STK Prompt) *</label>
+                <div style="display:flex; gap:8px;">
+                  <input type="tel" id="cust-pay-phone" class="form-control" placeholder="07XXXXXXXX" value="${App.currentUser ? App.currentUser.phone : ''}" maxlength="10">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="Customer.sendMpesaPrompt(${amount})" style="white-space:nowrap;">
+                    <i class="fas fa-mobile-alt"></i> Trigger STK Push
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>M-Pesa Confirmation Code / Reference (e.g. QHK889KL12)</label>
+                <input type="text" id="cust-pay-transref" class="form-control" placeholder="Enter code received on SMS, or leave blank to auto-generate">
+              </div>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:10px;">
+              <button type="submit" class="btn btn-gold" id="btn-cust-pay-submit" style="flex:1;">
+                <i class="fas fa-check-circle"></i> Submit Payment for Finance Clearance
+              </button>
+              <button type="button" class="btn btn-outline" onclick="App.closeModal('customer-pay-modal')">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    App.openModal('customer-pay-modal');
+  },
+
+  togglePayInputs() {
+    const method = document.getElementById('cust-pay-method').value;
+    const mpesaGroup = document.getElementById('cust-mpesa-group');
+    if (mpesaGroup) {
+      mpesaGroup.style.display = (method === 'M-Pesa') ? 'block' : 'none';
+    }
+  },
+
+  async sendMpesaPrompt(amount) {
+    const phone = document.getElementById('cust-pay-phone').value.trim();
+    if (!phone) {
+      App.showToast('Please enter your Safaricom phone number', 'warning');
+      return;
+    }
+    App.showToast('Sending STK Push prompt to ' + phone + '...', 'info');
+    try {
+      const res = await App.api('/api/payments/mpesa-simulate', {
+        method: 'POST',
+        body: JSON.stringify({ phone_number: phone, amount_kes: amount })
+      });
+      document.getElementById('cust-pay-transref').value = res.transaction_ref;
+      App.showToast('STK Push dispatched! Transaction code captured: ' + res.transaction_ref, 'success');
+    } catch (err) {
+      App.showToast(err.message, 'danger');
+    }
+  },
+
+  async submitAppointmentPayment(apptId) {
+    const btn = document.getElementById('btn-cust-pay-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting payment...';
+
+    const method = document.getElementById('cust-pay-method').value;
+    const phone = document.getElementById('cust-pay-phone') ? document.getElementById('cust-pay-phone').value.trim() : '';
+    const transRef = document.getElementById('cust-pay-transref') ? document.getElementById('cust-pay-transref').value.trim() : '';
+
+    try {
+      const res = await App.api('/api/payments', {
+        method: 'POST',
+        body: JSON.stringify({
+          appointment_id: apptId,
+          payment_method: method,
+          phone_number: phone,
+          transaction_ref: transRef
+        })
+      });
+
+      App.showToast(res.message, 'success');
+      App.closeModal('customer-pay-modal');
+      this.loadAppointments();
+    } catch (err) {
+      App.showToast(err.message, 'danger');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check-circle"></i> Submit Payment for Finance Clearance';
     }
   },
 
